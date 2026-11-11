@@ -45,11 +45,17 @@ class _ClayButtonState extends State<ClayButton> {
       (b - 50).clamp(0, 255),
     );
     final Color lightColor = Colors.white.withValues(alpha: 200 / 255);
-    
-    final Color displayContentColor = widget.textColor ?? 
-        (ThemeData.estimateBrightnessForColor(widget.baseColor) == Brightness.dark 
-            ? Colors.white
-            : Colors.black);
+
+    final Color preferredContentColor = widget.textColor ?? Colors.black;
+    final Color fallbackContentColor =
+        ThemeData.estimateBrightnessForColor(widget.baseColor) ==
+            Brightness.dark
+        ? Colors.white
+        : Colors.black;
+    final Color displayContentColor =
+        _contrastRatio(widget.baseColor, preferredContentColor) >= 4.5
+        ? preferredContentColor
+        : fallbackContentColor;
 
     final Color lighterColor = Color.fromARGB(
       (widget.baseColor.a * 255).round(),
@@ -138,5 +144,17 @@ class _ClayButtonState extends State<ClayButton> {
         child: content,
       ),
     );
+  }
+
+  double _contrastRatio(Color first, Color second) {
+    final firstLuminance = first.computeLuminance();
+    final secondLuminance = second.computeLuminance();
+    final lighter = firstLuminance > secondLuminance
+        ? firstLuminance
+        : secondLuminance;
+    final darker = firstLuminance > secondLuminance
+        ? secondLuminance
+        : firstLuminance;
+    return (lighter + 0.05) / (darker + 0.05);
   }
 }

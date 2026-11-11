@@ -1,16 +1,9 @@
 import 'package:flutter/material.dart';
 
-enum AppThemeMode {
-  peachClay,
-  oceanClay,
-  roseClay,
-  sageClay,
-  ashClay,
-  blackMode,
-  whiteMode,
-}
+enum AppThemeMode { dark, blue, green, violet, white }
 
 class AppThemeData {
+  final String name;
   final Color backgroundColor;
   final Color primaryColor;
   final Color accentColor;
@@ -20,6 +13,7 @@ class AppThemeData {
   final Color shadowColor;
 
   const AppThemeData({
+    required this.name,
     required this.backgroundColor,
     required this.primaryColor,
     required this.accentColor,
@@ -31,77 +25,58 @@ class AppThemeData {
 
   static AppThemeData getTheme(AppThemeMode mode) {
     switch (mode) {
-      case AppThemeMode.peachClay:
+      case AppThemeMode.dark:
         return const AppThemeData(
-          backgroundColor: Color(0xFFFDE8E0),
-          primaryColor: Color(0xFFE5B9A8),
-          accentColor: Color(0xFFFF9E80),
-          // accentColor: Color(0xffff0000),
-          textColor: Color(0xFF5D4037),
-          subTextColor: Color(0xFF8D6E63),
+          name: '1. 다크',
+          backgroundColor: Color(0xFF151A22),
+          primaryColor: Color(0xFF252D38),
+          accentColor: Color(0xFF4DD0C3),
+          textColor: Color(0xFFF2F4F8),
+          subTextColor: Color(0xFFAAB3C1),
           glassColor: Color(0x00000000),
-          shadowColor: Color(0x44A88E84),
+          shadowColor: Color(0x66000000),
         );
-      case AppThemeMode.oceanClay:
+      case AppThemeMode.blue:
         return const AppThemeData(
-          backgroundColor: Color(0xFFA4C9E4),
-          primaryColor: Color(0xFF7A9BB7),
-          // accentColor: Color(0xFF80D8FF),
-          accentColor: Color(0xFF042253),
-          textColor: Color(0xFF263238),
-          subTextColor: Color(0xFF455A64),
+          name: '2. 블루',
+          backgroundColor: Color(0xFFEDF3FA),
+          primaryColor: Color(0xFFCAD9EC),
+          accentColor: Color(0xFF315E9B),
+          textColor: Color(0xFF1A2B45),
+          subTextColor: Color(0xFF526985),
           glassColor: Color(0x00000000),
-          shadowColor: Color(0x44546E7A),
+          shadowColor: Color(0x33315E9B),
         );
-      case AppThemeMode.roseClay:
+      case AppThemeMode.green:
         return const AppThemeData(
-          backgroundColor: Color(0xFFF3D5D8),
-          primaryColor: Color(0xFFC9A6AA),
-          accentColor: Color(0xFFFF80AB),
-          textColor: Color(0xFF4A148C),
-          subTextColor: Color(0xFF7B1FA2),
+          name: '3. 세이지 그린',
+          backgroundColor: Color(0xFFEEF4EF),
+          primaryColor: Color(0xFFD7E5D9),
+          accentColor: Color(0xFF3A7053),
+          textColor: Color(0xFF1E3427),
+          subTextColor: Color(0xFF536B5C),
           glassColor: Color(0x00000000),
-          shadowColor: Color(0x44880E4F),
+          shadowColor: Color(0x333A7053),
         );
-      case AppThemeMode.sageClay:
+      case AppThemeMode.violet:
         return const AppThemeData(
-          backgroundColor: Color(0xFFD4EAD8),
-          primaryColor: Color(0xFFA6C9AD),
-          // accentColor: Color(0xFFB9F6CA),
-          accentColor: Color(0xFF044917),
-          textColor: Color(0xFF1B5E20),
-          subTextColor: Color(0xFF388E3C),
+          name: '4. 바이올렛',
+          backgroundColor: Color(0xFFF4F0F7),
+          primaryColor: Color(0xFFE0D6E8),
+          accentColor: Color(0xFF704C91),
+          textColor: Color(0xFF30223F),
+          subTextColor: Color(0xFF665874),
           glassColor: Color(0x00000000),
-          shadowColor: Color(0x442E7D32),
+          shadowColor: Color(0x33704C91),
         );
-      case AppThemeMode.ashClay:
+      case AppThemeMode.white:
         return const AppThemeData(
-          backgroundColor: Color(0xFFE0E0E0),
-          primaryColor: Color(0xFFAAAAAA),
-          // accentColor: Color(0xFFBDBDBD),
-          accentColor: Color(0xFF222222),
-          textColor: Color(0xFF212121),
-          subTextColor: Color(0xFF616161),
-          glassColor: Color(0x00000000),
-          shadowColor: Color(0x44424242),
-        );
-      case AppThemeMode.blackMode:
-        return const AppThemeData(
-          backgroundColor: Color(0xFF000000),
-          primaryColor: Color(0xFF1A1A1A), // 버튼을 배경보다 약간 밝게 하여 입체감 확보
-          accentColor: Color(0xFF00E5FF),
-          textColor: Color(0xFFFFFFFF), // 확실한 화이트 텍스트
-          subTextColor: Color(0xFF9E9E9E),
-          glassColor: Color(0x00000000),
-          shadowColor: Color(0xFF222222), // 어두운 테마용 밝은 그림자 로직 대응
-        );
-      case AppThemeMode.whiteMode:
-        return const AppThemeData(
+          name: '5. 화이트',
           backgroundColor: Color(0xFFFFFFFF),
-          primaryColor: Color(0xFFF5F5F5),
-          accentColor: Color(0xFF2196F3),
-          textColor: Color(0xFF212121),
-          subTextColor: Color(0xFF757575),
+          primaryColor: Color(0xFFF2F4F7),
+          accentColor: Color(0xFF285EA8),
+          textColor: Color(0xFF202938),
+          subTextColor: Color(0xFF606B7A),
           glassColor: Color(0x00000000),
           shadowColor: Color(0x1A000000),
         );

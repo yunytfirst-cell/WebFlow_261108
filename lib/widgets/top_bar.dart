@@ -172,13 +172,13 @@ class _TopBarState extends State<TopBar> {
     final double tickerWidth = (widget.maxWidth - 120).clamp(180.0, 700.0).floorToDouble();
     final double totalAreaWidth = widget.maxWidth;
     double refSize = containerWidth < containerHeight ? containerWidth : containerHeight;
-    
+
     final double unifiedFontSize = refSize * 0.28;
     final double tickerFontSize = _getTickerFontSize();
 
     // 하단 아이콘 행의 실측 원본 폭 계산
     final double unscaledIconsWidth = _calculateUnscaledIconsRowWidth(unifiedFontSize, widget.currentModeName);
-    
+
     // 스케줄 박스와 아이콘 행이 완벽히 동일한 영역 폭을 공유하도록 매칭 (절대 스케줄 박스가 더 크지 않음)
     final double targetWidth = containerWidth < unscaledIconsWidth ? containerWidth : unscaledIconsWidth;
 
@@ -271,7 +271,7 @@ class _TopBarState extends State<TopBar> {
                               ClayButton(
                                 icon: Icons.palette_outlined,
                                 onPressed: widget.onToggleTheme,
-                                tooltip: "테마",
+                                tooltip: "테마: ${widget.theme.name}",
                                 size: unifiedFontSize,
                                 baseColor: widget.theme.accentColor,
                                 textColor: widget.theme.textColor,

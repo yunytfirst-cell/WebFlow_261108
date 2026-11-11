@@ -92,6 +92,8 @@ class _MainAreaState extends State<MainArea> with WindowListener {
 
   bool _showSidebar = false;
   bool _showAwarenessSidebar = false;
+  // 두 사이드바가 겹칠 때 마지막으로 조작한 패널을 위에 그린다.
+  bool _awarenessSidebarOnTop = false;
   String _selectedSubGoal = "";
   bool _showOverlay = false;
   String _overlayText = "";
@@ -122,7 +124,7 @@ class _MainAreaState extends State<MainArea> with WindowListener {
   DisplayMode _currentMode = DisplayMode.normal;
   List<ClockMarker> _clickMarkers = [];
   int _sessionStartTimeInSeconds = 0;
-  AppThemeMode _currentThemeMode = AppThemeMode.peachClay;
+  AppThemeMode _currentThemeMode = AppThemeMode.dark;
   AppThemeData get _currentTheme => AppThemeData.getTheme(_currentThemeMode);
 
   @override
@@ -554,11 +556,15 @@ class _MainAreaState extends State<MainArea> with WindowListener {
                       onMemoPressed: _openVirtualNotepad,
                       onToggleSiderbar: () => setState(() {
                         _showSidebar = !_showSidebar;
-                        if (_showSidebar) _showAwarenessSidebar = false;
+                        if (_showSidebar) {
+                          _awarenessSidebarOnTop = false;
+                        }
                       }),
                       onToggleAwarenessSidebar: () => setState(() {
                         _showAwarenessSidebar = !_showAwarenessSidebar;
-                        if (_showAwarenessSidebar) _showSidebar = false;
+                        if (_showAwarenessSidebar) {
+                          _awarenessSidebarOnTop = true;
+                        }
                       }),
                       onSettingsPressed: _showTimeEditDialog,
                       onToggleTheme: _toggleTheme,
@@ -581,49 +587,14 @@ class _MainAreaState extends State<MainArea> with WindowListener {
                     ),
                   ),
                 ),
-                if (_showSidebar)
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: GoalListSidebar(
-                      runRecords: _sidebarRunRecords,
-                      initialTitle: _sidebarTitle,
-                      initialGoals: _sidebarGoals,
-                      initialFilePath: _sidebarFilePath,
-                      onTitleChanged: (v) => setState(() => _sidebarTitle = v),
-                      onGoalsChanged: (v) => _sidebarGoals = v,
-                      onFilePathChanged: (v) => _sidebarFilePath = v,
-                      onSelectGoal: (g) {
-                        setState(
-                          () => _selectedSubGoal = (_selectedSubGoal == g)
-                              ? ""
-                              : g,
-                        );
-                      },
-                      onDeleteGoal: (goal) {
-                        if (_selectedSubGoal == goal)
-                          setState(() => _selectedSubGoal = "");
-                      },
-                      onClose: () => setState(() => _showSidebar = false),
-                    ),
-                  ),
-                if (_showAwarenessSidebar)
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    bottom: 0,
-                    child: AwarenessListSidebar(
-                      initialTitle: _awarenessTitle,
-                      initialItems: _awarenessItems,
-                      initialFilePath: _awarenessFilePath,
-                      onTitleChanged: (v) => _awarenessTitle = v,
-                      onItemsChanged: (v) => _awarenessItems = v,
-                      onFilePathChanged: (v) => _awarenessFilePath = v,
-                      onClose: () =>
-                          setState(() => _showAwarenessSidebar = false),
-                    ),
-                  ),
+                // 겹칠 때 마지막으로 조작한 패널이 위에 보이도록 나중에 그린다.
+                if (_awarenessSidebarOnTop) ...[
+                  if (_showSidebar) _buildGoalSidebar(),
+                  if (_showAwarenessSidebar) _buildAwarenessSidebar(),
+                ] else ...[
+                  if (_showAwarenessSidebar) _buildAwarenessSidebar(),
+                  if (_showSidebar) _buildGoalSidebar(),
+                ],
                 Positioned.fill(
                   child: IgnorePointer(
                     child: AnimatedOpacity(
@@ -655,6 +626,63 @@ class _MainAreaState extends State<MainArea> with WindowListener {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildGoalSidebar() {
+    // 순서가 바뀌어도 패널 상태(입력 중인 내용)가 유지되도록 고정 key를 쓴다.
+    return Positioned(
+      key: const ValueKey('goalSidebar'),
+      top: 0,
+      right: 0,
+      bottom: 0,
+      child: GoalListSidebar(
+        onBringToFront: () {
+          if (_awarenessSidebarOnTop) {
+            setState(() => _awarenessSidebarOnTop = false);
+          }
+        },
+        runRecords: _sidebarRunRecords,
+        onRunRecordsChanged: () => setState(() {}),
+        initialTitle: _sidebarTitle,
+        initialGoals: _sidebarGoals,
+        initialFilePath: _sidebarFilePath,
+        onTitleChanged: (v) => setState(() => _sidebarTitle = v),
+        onGoalsChanged: (v) => _sidebarGoals = v,
+        onFilePathChanged: (v) => _sidebarFilePath = v,
+        onSelectGoal: (g) {
+          setState(() => _selectedSubGoal = (_selectedSubGoal == g) ? "" : g);
+        },
+        onDeleteGoal: (goal) {
+          if (_selectedSubGoal == goal) setState(() => _selectedSubGoal = "");
+        },
+        onClose: () => setState(() => _showSidebar = false),
+      ),
+    );
+  }
+
+  Widget _buildAwarenessSidebar() {
+    return Positioned(
+      key: const ValueKey('awarenessSidebar'),
+      top: 0,
+      left: 0,
+      bottom: 0,
+      child: AwarenessListSidebar(
+        onBringToFront: () {
+          if (!_awarenessSidebarOnTop) {
+            setState(() => _awarenessSidebarOnTop = true);
+          }
+        },
+        runRecords: _sidebarRunRecords,
+        onRunRecordsChanged: () => setState(() {}),
+        initialTitle: _awarenessTitle,
+        initialItems: _awarenessItems,
+        initialFilePath: _awarenessFilePath,
+        onTitleChanged: (v) => _awarenessTitle = v,
+        onItemsChanged: (v) => _awarenessItems = v,
+        onFilePathChanged: (v) => _awarenessFilePath = v,
+        onClose: () => setState(() => _showAwarenessSidebar = false),
       ),
     );
   }

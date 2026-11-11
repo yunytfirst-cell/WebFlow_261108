@@ -38,6 +38,14 @@ service or helper and update all callers and tests.
 
 - Keep the Git repository at the project root:
   `C:\AppProject\02.Project\01.FlowWork_260201\flow`.
+- Store tracked source and project files under this repository location:
+  `C:\AppProject\02.Project\01.FlowWork_260201\flow\`.
+- Keep this file-management Skill at:
+  `C:\AppProject\02.Project\01.FlowWork_260201\flow\.github\skills\flutter-file-save\SKILL.md`.
+- Keep application source under `...\flow\lib\`, tests under `...\flow\test\`,
+  project instructions under `...\flow\.github\`, and Git configuration at
+  `...\flow\.git\`. Do not save project files in the desktop or outside this
+  repository unless the user explicitly requests an export or copy.
 - If the repository does not exist, initialize it at that project root before
   saving tracked work; do not create a nested repository in `lib/`, `test/`,
   or generated-output folders.
@@ -48,6 +56,20 @@ service or helper and update all callers and tests.
   the requested changes when the user asks to save or update the repository.
 - A GitHub remote is separate from the local repository. Do not invent or
   publish to a remote without an explicit repository URL and authorization.
+- When the user provides a GitHub repository URL, configure it as `origin`,
+  confirm the target branch, and push only after reviewing the commit and
+  working-tree status.
+- Use the project `main` branch as the default GitHub target unless the user
+  specifies another branch. Verify that local `main` and `origin/main` are
+  synchronized after a successful push.
+- Check tracked files against GitHub's file-size limits before pushing. Do not
+  commit generated output, caches, or oversized source archives; add them to
+  `.gitignore` when they are not required at runtime, or use Git LFS only when
+  the user explicitly requests and authorizes it.
+- If a push is rejected, read the remote error, make the smallest necessary
+  repository-only correction, amend or create a follow-up commit as
+  appropriate, and retry. Never delete the local source file merely to make a
+  push pass.
 
 ## File Management Rules
 
@@ -131,6 +153,8 @@ restore states for overflow before considering the feature complete.
   4. a filesystem failure displays location, character information, and error.
   5. a file saved by either list can be opened by the other list with each
      multiline item restored as one item.
+  6. both sidebar file pickers open the same shared directory and preserve
+     execution-counter records when files move between list types.
 
 ## Recorded Failure Patterns
 
@@ -153,6 +177,9 @@ restore states for overflow before considering the feature complete.
 - Fixing only the first matching list widget left parallel list screens with
   older save behavior. Treat analogous widgets as one feature surface and
   verify them together.
+- Keeping analogous lists in separate storage directories made saved files
+  unavailable from the sibling list. Use one shared directory, a common
+  cross-marker parser/serializer, and shared execution records for both lists.
 
 When a new related issue is fixed, add its reusable cause and verification
 case to this section rather than recording only the specific symptom.

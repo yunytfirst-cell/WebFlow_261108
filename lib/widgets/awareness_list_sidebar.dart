@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
+import '../services/list_file_service.dart';
+import 'run_counter_panel.dart';
 
 /*
 [AwarenessListSidebar]
@@ -25,6 +26,9 @@ class AwarenessListSidebar extends StatefulWidget {
   final String initialTitle;
   final List<AwarenessItem> initialItems;
   final String? initialFilePath;
+  final Map<String, int> runRecords;
+  final VoidCallback onRunRecordsChanged;
+  final VoidCallback? onBringToFront; // 패널 조작 시 다른 패널보다 위로 올림
   final Function(String) onTitleChanged;
   final Function(List<AwarenessItem>) onItemsChanged;
   final Function(String?) onFilePathChanged;
@@ -35,6 +39,9 @@ class AwarenessListSidebar extends StatefulWidget {
     required this.initialTitle,
     required this.initialItems,
     required this.initialFilePath,
+    required this.runRecords,
+    required this.onRunRecordsChanged,
+    this.onBringToFront,
     required this.onTitleChanged,
     required this.onItemsChanged,
     required this.onFilePathChanged,
@@ -49,14 +56,10 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
   late List<AwarenessItem> _items;
   int? _activeActionIndex;
   String? _currentFilePath;
-  double _widthRatio = 0.8;
+  double _widthRatio = 0.48;
 
   Future<String> get _localPath async {
-    final directory = await getApplicationDocumentsDirectory();
-    final path = "${directory.path}/FlowAwareness";
-    final dir = Directory(path);
-    if (!await dir.exists()) await dir.create(recursive: true);
-    return path;
+    return (await ListFileService.sharedDirectory()).path;
   }
 
   void _clearAll() {
@@ -68,7 +71,9 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
       _items = [AwarenessItem()];
       _activeActionIndex = null;
       _currentFilePath = null;
+      widget.runRecords.clear();
     });
+    widget.onRunRecordsChanged();
     widget.onTitleChanged("");
     widget.onItemsChanged(_items);
     widget.onFilePathChanged(null);
@@ -219,16 +224,14 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
       final fileName = result.fileName;
       final file = File(_currentFilePath ?? '$path/$fileName');
       savePath = file.path;
-      final content = StringBuffer()
-        ..writeln("[AWARE]: ${_titleController.text}");
-      for (int i = 0; i < _items.length; i++) {
-        content
-          ..writeln("[AWARE_ITEM:${i + 1}]")
-          ..writeln(_items[i].controller.text)
-          ..writeln("[END_AWARE_ITEM]");
-      }
+      final content = ListFileService.serialize(
+        kind: ListFileKind.awareness,
+        title: _titleController.text,
+        items: _items.map((item) => item.controller.text).toList(),
+        runRecords: widget.runRecords,
+      );
 
-      await file.writeAsString(content.toString(), flush: true);
+      await file.writeAsString(content, flush: true);
       _currentFilePath = file.path;
       widget.onFilePathChanged(file.path);
       if (mounted) {
@@ -259,55 +262,16 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
     final selectedPath = result?.files.single.path;
     if (selectedPath != null) {
       final file = File(selectedPath);
-      String content = await file.readAsString();
-      List<String> lines = content.split('\n');
+      final data = ListFileService.parse(await file.readAsString());
 
       setState(() {
         _items.clear();
-        final loadedItems = <String>[];
-        String? markedItemText;
-        final legacyItemText = StringBuffer();
+        widget.runRecords
+          ..clear()
+          ..addAll(data.runRecords);
+        if (data.title != null) _titleController.text = data.title!;
 
-        void addLegacyItem() {
-          final text = legacyItemText.toString().trim();
-          if (text.isNotEmpty) loadedItems.add(text);
-          legacyItemText.clear();
-        }
-
-        for (var line in lines) {
-          final trimmedLine = line.trim();
-          if (RegExp(r'^\[(AWARE_ITEM|GOAL):\d+\]$').hasMatch(trimmedLine)) {
-            addLegacyItem();
-            markedItemText = '';
-          } else if (RegExp(
-                r'^\[END_(AWARE_ITEM|GOAL)\]$',
-              ).hasMatch(trimmedLine) &&
-              markedItemText != null) {
-            loadedItems.add(markedItemText.trim());
-            markedItemText = null;
-          } else if (markedItemText != null) {
-            markedItemText = markedItemText.isEmpty
-                ? line
-                : '$markedItemText\n$line';
-          } else if (line.startsWith('[AWARE]: ') ||
-              line.startsWith('[PJT]: ')) {
-            _titleController.text = line.substring(line.indexOf(']: ') + 3);
-          } else if (RegExp(r'^\d+\. ').hasMatch(line)) {
-            addLegacyItem();
-            legacyItemText.write(line.replaceFirst(RegExp(r'^\d+\. '), ''));
-          } else if (line.trim().isNotEmpty) {
-            if (legacyItemText.isNotEmpty) legacyItemText.write('\n');
-            legacyItemText.write(line);
-          }
-        }
-
-        if (markedItemText != null) {
-          loadedItems.add(markedItemText.trim());
-        } else {
-          addLegacyItem();
-        }
-
-        for (final itemText in loadedItems) {
+        for (final itemText in data.items) {
           _items.add(AwarenessItem(text: itemText)..controller.text = itemText);
         }
 
@@ -316,6 +280,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
         widget.onFilePathChanged(file.path);
         widget.onItemsChanged(_items);
       });
+      widget.onRunRecordsChanged();
     }
   }
 
@@ -362,171 +327,187 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
     double screenW = MediaQuery.of(context).size.width;
     double screenH = MediaQuery.of(context).size.height;
 
-    // 최소 280px, 최대 화면의 85% 범위 내에서 너비 계산
-    double currentWidth = (screenW * _widthRatio).clamp(280.0, screenW * 0.85);
+    // 기본 폭은 화면의 48%(두 패널이 나란히 보이는 크기)이고,
+    // 드래그하면 화면 끝까지 확장할 수 있다. 최소 폭은 기존 기준을 유지한다.
+    final double defaultPanelWidth = screenW * 0.48;
+    final double minPanelWidth = defaultPanelWidth < 160.0
+        ? defaultPanelWidth
+        : 160.0;
+    final double maxPanelWidth = screenW;
+    double currentWidth = (screenW * _widthRatio).clamp(
+      minPanelWidth,
+      maxPanelWidth,
+    );
 
     double minSide = screenW < screenH ? screenW : screenH;
-    double responsiveFontSize = (minSide * 0.045).clamp(14.0, 22.0);
+    double responsiveFontSize = (minSide * 0.03).clamp(11.0, 18.0);
 
-    return Align(
-      alignment: Alignment.centerLeft, // 💡 화면의 좌측에 고정
-      child: SizedBox(
-        width: currentWidth,
-        height: double.infinity,
-        child: Stack(
-          children: [
-            // 1. 사이드바 메인 컨테이너 (좌측 끝 고정)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: currentWidth,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(200),
-                  border: const Border(
-                    right: BorderSide(color: Colors.white12, width: 1.5),
+    return Listener(
+      onPointerDown: (_) => widget.onBringToFront?.call(),
+      child: Align(
+        alignment: Alignment.centerLeft, // 💡 화면의 좌측에 고정
+        child: SizedBox(
+          width: currentWidth,
+          height: double.infinity,
+          child: Stack(
+            children: [
+              // 1. 사이드바 메인 컨테이너 (좌측 끝 고정)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: currentWidth,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withAlpha(200),
+                    border: const Border(
+                      right: BorderSide(color: Colors.white12, width: 1.5),
+                    ),
                   ),
-                ),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.white70,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white70,
+                              ),
+                              onPressed: widget.onClose,
                             ),
-                            onPressed: widget.onClose,
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  "👁️ 알아차림 리스트",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: responsiveFontSize,
-                                    fontWeight: FontWeight.bold,
+                            Expanded(
+                              child: Center(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    "👁️ 알아차림 리스트",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: responsiveFontSize,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 40),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(15.0),
-                      child: TextField(
-                        controller: _titleController,
-                        maxLines: null,
-                        keyboardType: TextInputType.multiline,
-                        style: const TextStyle(
-                          color: Colors.orangeAccent,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: "오늘의 알아차림",
-                          hintStyle: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 14,
-                          ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: true,
-                          fillColor: Colors.white.withAlpha(10),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 12,
-                          ),
+                            const SizedBox(width: 40),
+                          ],
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          _buildActionButton(
-                            Icons.note_add,
-                            "새로만들기",
-                            _clearAll,
-                            Colors.purpleAccent,
+                      Padding(
+                        padding: const EdgeInsets.all(15.0),
+                        child: TextField(
+                          controller: _titleController,
+                          maxLines: null,
+                          keyboardType: TextInputType.multiline,
+                          style: TextStyle(
+                            color: Colors.orangeAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: responsiveFontSize.clamp(12.0, 16.0),
                           ),
-                          _buildActionButton(
-                            Icons.save,
-                            "저장",
-                            _saveToFile,
-                            Colors.blueAccent,
+                          decoration: InputDecoration(
+                            hintText: "오늘의 알아차림",
+                            hintStyle: TextStyle(
+                              color: Colors.white54,
+                              fontSize: responsiveFontSize.clamp(11.0, 14.0),
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: true,
+                            fillColor: Colors.white.withAlpha(10),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 12,
+                            ),
                           ),
-                          _buildActionButton(
-                            Icons.file_open,
-                            "불러오기",
-                            _loadFromFile,
-                            Colors.greenAccent,
-                          ),
-                          _buildActionButton(
-                            Icons.folder,
-                            "폴더관리",
-                            _openStorageFolder,
-                            Colors.orangeAccent,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    const Divider(
-                      color: Colors.white24,
-                      indent: 20,
-                      endIndent: 20,
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: _items.length,
-                        itemBuilder: (context, index) {
-                          return _buildBubbleItem(index, _items[index].id);
-                        },
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            _buildActionButton(
+                              Icons.note_add,
+                              "새로만들기",
+                              _clearAll,
+                              Colors.purpleAccent,
+                            ),
+                            _buildActionButton(
+                              Icons.save,
+                              "저장",
+                              _saveToFile,
+                              Colors.blueAccent,
+                            ),
+                            _buildActionButton(
+                              Icons.file_open,
+                              "불러오기",
+                              _loadFromFile,
+                              Colors.greenAccent,
+                            ),
+                            _buildActionButton(
+                              Icons.folder,
+                              "폴더관리",
+                              _openStorageFolder,
+                              Colors.orangeAccent,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      RunCounterPanel(
+                        runRecords: widget.runRecords,
+                        onRecordsChanged: widget.onRunRecordsChanged,
+                      ),
+                      const Divider(
+                        color: Colors.white24,
+                        indent: 20,
+                        endIndent: 20,
+                      ),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: _items.length,
+                          itemBuilder: (context, index) {
+                            return _buildBubbleItem(index, _items[index].id);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // 2. 우측 드래그 조작 영역 (드래그 시 좌우 방향으로 폭이 조절됨)
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: 15,
-              child: MouseRegion(
-                cursor: SystemMouseCursors.resizeLeftRight,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onHorizontalDragUpdate: ((details) {
-                    setState(() {
-                      // 마우스를 오른쪽(+dx)으로 끌면 폭이 늘어나고, 왼쪽(-dx)으로 끌면 줄어듦
-                      double newWidth = (currentWidth + details.delta.dx).clamp(
-                        280.0,
-                        screenW * 0.85,
-                      );
-                      _widthRatio = newWidth / screenW;
-                    });
-                  }),
+              // 2. 우측 드래그 조작 영역 (드래그 시 좌우 방향으로 폭이 조절됨)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: 15,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.resizeLeftRight,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onHorizontalDragStart: (_) => widget.onBringToFront?.call(),
+                    onHorizontalDragUpdate: ((details) {
+                      setState(() {
+                        // 마우스를 오른쪽(+dx)으로 끌면 폭이 늘어나고, 왼쪽(-dx)으로 끌면 줄어듦
+                        double newWidth = (currentWidth + details.delta.dx)
+                            .clamp(minPanelWidth, maxPanelWidth);
+                        _widthRatio = newWidth / screenW;
+                      });
+                    }),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -607,42 +588,53 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
             ),
           ),
           isExpanded
-              ? Row(
+              ? Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _iconBtn(
-                      Icons.arrow_upward,
-                      Colors.orangeAccent,
-                      () => _moveUp(index),
-                    ),
-                    _iconBtn(
-                      Icons.arrow_downward,
-                      Colors.orangeAccent,
-                      () => _moveDown(index),
-                    ),
-                    _iconBtn(
-                      Icons.add_circle_outline,
-                      Colors.blueAccent,
-                      () => _addItem(index),
-                    ),
-                    _iconBtn(
-                      Icons.remove_circle_outline,
-                      Colors.white38,
-                      () => _handleDelete(index),
-                    ),
-                    InkWell(
-                      onTap: () => setState(() => _activeActionIndex = null),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 15,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _iconBtn(
+                          Icons.arrow_upward,
+                          Colors.orangeAccent,
+                          () => _moveUp(index),
                         ),
-                        child: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.white54,
-                          size: 20,
+                        _iconBtn(
+                          Icons.arrow_downward,
+                          Colors.orangeAccent,
+                          () => _moveDown(index),
                         ),
-                      ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _iconBtn(
+                          Icons.add_circle_outline,
+                          Colors.blueAccent,
+                          () => _addItem(index),
+                        ),
+                        _iconBtn(
+                          Icons.remove_circle_outline,
+                          Colors.white38,
+                          () => _handleDelete(index),
+                        ),
+                        InkWell(
+                          onTap: () =>
+                              setState(() => _activeActionIndex = null),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
+                            ),
+                            child: const Icon(
+                              Icons.chevron_right,
+                              color: Colors.white54,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 )
