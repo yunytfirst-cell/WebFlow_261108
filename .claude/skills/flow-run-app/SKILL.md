@@ -10,7 +10,7 @@ description: Flow 앱 작업을 마친 뒤 사용자가 직접 확인할 수 있
 ## 언제
 
 - 앱 코드(lib/, assets/, pubspec.yaml, windows/)를 바꾼 작업이 끝나면 **묻지 말고 항상** 실행한다.
-- 순서: `flutter analyze lib test` / `flutter test` 통과 → 관련 스킬 갱신 → 커밋 → 앱 실행.
+- 순서: `flutter analyze lib test` / `flutter test` 통과 → 관련 스킬 갱신 → 커밋 → `git push`(현재 작업 브랜치, origin) → 앱 실행.
 - 문서·설정만 바꿨으면 실행하지 않는다.
 
 ## 하는 법
