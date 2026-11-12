@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('알아차림 리스트도 공유 실행 카운터를 사용한다', (WidgetTester tester) async {
+  testWidgets('알아차림 리스트는 자신에게 전달된 실행 카운터만 변경한다', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -17,6 +17,7 @@ void main() {
           body: AwarenessListSidebar(
             runRecords: runRecords,
             onRunRecordsChanged: () {},
+            onLoadDirectoryChanged: (_) {},
             onClose: () {},
             initialTitle: '',
             initialItems: [AwarenessItem()],
@@ -52,6 +53,7 @@ void main() {
           body: GoalListSidebar(
             runRecords: {},
             onRunRecordsChanged: () {},
+            onLoadDirectoryChanged: (_) {},
             onSelectGoal: (_) {},
             onDeleteGoal: (_) {},
             onClose: () {},

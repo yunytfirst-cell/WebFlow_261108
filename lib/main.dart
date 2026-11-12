@@ -101,8 +101,12 @@ class _MainAreaState extends State<MainArea> with WindowListener {
   String? _sidebarFilePath;
   List<GoalItem> _sidebarGoals = [GoalItem()];
   final Map<String, int> _sidebarRunRecords = {}; // 끝장 리스트 실행 카운터 기록
+  final Map<String, int> _awarenessRunRecords = {}; // 알아차림 리스트 실행 카운터 기록 (끝장 리스트와 별개)
   String _awarenessTitle = "";
   String? _awarenessFilePath;
+  // 불러오기 폴더는 리스트별로 따로 기억한다 (서로 공유하지 않음)
+  String? _goalLoadDirectory;
+  String? _awarenessLoadDirectory;
   List<AwarenessItem> _awarenessItems = [AwarenessItem()];
 
   // Daily Schedule 상태
@@ -651,6 +655,8 @@ class _MainAreaState extends State<MainArea> with WindowListener {
         onTitleChanged: (v) => setState(() => _sidebarTitle = v),
         onGoalsChanged: (v) => _sidebarGoals = v,
         onFilePathChanged: (v) => _sidebarFilePath = v,
+        loadDirectory: _goalLoadDirectory,
+        onLoadDirectoryChanged: (v) => _goalLoadDirectory = v,
         onSelectGoal: (g) {
           setState(() => _selectedSubGoal = (_selectedSubGoal == g) ? "" : g);
         },
@@ -674,7 +680,7 @@ class _MainAreaState extends State<MainArea> with WindowListener {
             setState(() => _awarenessSidebarOnTop = true);
           }
         },
-        runRecords: _sidebarRunRecords,
+        runRecords: _awarenessRunRecords,
         onRunRecordsChanged: () => setState(() {}),
         initialTitle: _awarenessTitle,
         initialItems: _awarenessItems,
@@ -682,6 +688,8 @@ class _MainAreaState extends State<MainArea> with WindowListener {
         onTitleChanged: (v) => _awarenessTitle = v,
         onItemsChanged: (v) => _awarenessItems = v,
         onFilePathChanged: (v) => _awarenessFilePath = v,
+        loadDirectory: _awarenessLoadDirectory,
+        onLoadDirectoryChanged: (v) => _awarenessLoadDirectory = v,
         onClose: () => setState(() => _showAwarenessSidebar = false),
       ),
     );

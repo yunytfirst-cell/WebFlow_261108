@@ -21,6 +21,22 @@ void main() {
     expect(RunCounterService.parseLine('[RUN] 2026-11-05: 7\r')?.value, 7);
   });
 
+  test('접두어가 다른 실행 기록은 읽지 않는다', () {
+    expect(RunCounterService.parseLine('[AWARE_RUN] 2026-11-05: 7'), isNull);
+    expect(
+      RunCounterService.parseLine(
+        '[AWARE_RUN] 2026-11-05: 7',
+        linePrefix: '[AWARE_RUN] ',
+      )?.value,
+      7,
+    );
+    expect(
+      RunCounterService.parseLine('[RUN] 2026-11-05: 7', linePrefix: '[AWARE_RUN] '),
+      isNull,
+    );
+    expect(RunCounterService.isRunLine('[AWARE_RUN] 2026-11-05: 7'), isTrue);
+  });
+
   test('todayKey 형식', () {
     expect(RunCounterService.todayKey(DateTime(2026, 1, 7)), '2026-01-07');
   });

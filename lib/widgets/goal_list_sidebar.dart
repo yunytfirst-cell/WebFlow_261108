@@ -36,7 +36,13 @@ class GoalListSidebar extends StatefulWidget {
   final VoidCallback onRunRecordsChanged;
   final VoidCallback? onBringToFront; // 패널 조작 시 다른 패널보다 위로 올림
 
+  /// 이 리스트에서 마지막으로 불러온 폴더 (다른 리스트와 공유하지 않음)
+  final String? loadDirectory;
+  final Function(String?) onLoadDirectoryChanged;
+
   const GoalListSidebar({
+    this.loadDirectory,
+    required this.onLoadDirectoryChanged,
     required this.runRecords,
     required this.onRunRecordsChanged,
     this.onBringToFront,
@@ -68,9 +74,13 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
   // 실행 카운터: 현재 열린 txt 파일의 날짜별 기록 ([RUN] 줄). 저장 버튼을 눌러야 파일에 기록된다.
   Map<String, int> get _runRecords => widget.runRecords;
 
-  // 파일 저장 경로 가져오기
+  // 이 리스트의 작업 폴더: 마지막으로 불러온 폴더, 없으면 기본 폴더(FlowSchedules)
   Future<String> get _localPath async {
-    return (await ListFileService.sharedDirectory()).path;
+    final loadDirectory = widget.loadDirectory;
+    if (loadDirectory != null && await Directory(loadDirectory).exists()) {
+      return loadDirectory;
+    }
+    return (await ListFileService.directoryFor(ListFileKind.goal)).path;
   }
 
   // [신규] 현재 화면의 모든 내용을 비우고 새로 시작하는 기능 (기존 데이터 삭제 아님)
@@ -280,7 +290,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
   Future<void> _loadFromFile() async {
     final path = await _localPath;
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      initialDirectory: path,
+      initialDirectory: ListFileService.pickerInitialDirectory(path),
       type: FileType.custom,
       allowedExtensions: ['txt'],
     );
@@ -288,7 +298,10 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
     final selectedPath = result?.files.single.path;
     if (selectedPath != null) {
       final file = File(selectedPath);
-      final data = ListFileService.parse(await file.readAsString());
+      final data = ListFileService.parse(
+        await file.readAsString(),
+        kind: ListFileKind.goal,
+      );
 
       setState(() {
         _goals.clear();
@@ -303,6 +316,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
         _currentFilePath = file.path;
         widget.onFilePathChanged(file.path);
       });
+      widget.onLoadDirectoryChanged(file.parent.path);
       widget.onRunRecordsChanged();
       widget.onSelectGoal("");
     }

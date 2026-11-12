@@ -33,7 +33,13 @@ class AwarenessListSidebar extends StatefulWidget {
   final Function(List<AwarenessItem>) onItemsChanged;
   final Function(String?) onFilePathChanged;
 
+  /// 이 리스트에서 마지막으로 불러온 폴더 (다른 리스트와 공유하지 않음)
+  final String? loadDirectory;
+  final Function(String?) onLoadDirectoryChanged;
+
   const AwarenessListSidebar({
+    this.loadDirectory,
+    required this.onLoadDirectoryChanged,
     super.key,
     required this.onClose,
     required this.initialTitle,
@@ -58,8 +64,13 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
   String? _currentFilePath;
   double _widthRatio = 0.48;
 
+  // 이 리스트의 작업 폴더: 마지막으로 불러온 폴더, 없으면 기본 폴더(FlowAwareness)
   Future<String> get _localPath async {
-    return (await ListFileService.sharedDirectory()).path;
+    final loadDirectory = widget.loadDirectory;
+    if (loadDirectory != null && await Directory(loadDirectory).exists()) {
+      return loadDirectory;
+    }
+    return (await ListFileService.directoryFor(ListFileKind.awareness)).path;
   }
 
   void _clearAll() {
@@ -254,7 +265,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
   Future<void> _loadFromFile() async {
     final path = await _localPath;
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      initialDirectory: path,
+      initialDirectory: ListFileService.pickerInitialDirectory(path),
       type: FileType.custom,
       allowedExtensions: ['txt'],
     );
@@ -262,7 +273,10 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
     final selectedPath = result?.files.single.path;
     if (selectedPath != null) {
       final file = File(selectedPath);
-      final data = ListFileService.parse(await file.readAsString());
+      final data = ListFileService.parse(
+        await file.readAsString(),
+        kind: ListFileKind.awareness,
+      );
 
       setState(() {
         _items.clear();
@@ -280,6 +294,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
         widget.onFilePathChanged(file.path);
         widget.onItemsChanged(_items);
       });
+      widget.onLoadDirectoryChanged(file.parent.path);
       widget.onRunRecordsChanged();
     }
   }
