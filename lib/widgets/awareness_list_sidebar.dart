@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // 순번 입력칸 숫자만 허용
 import 'package:file_picker/file_picker.dart';
 import '../services/list_file_service.dart';
 import 'run_counter_panel.dart';
@@ -13,6 +14,7 @@ import 'run_counter_panel.dart';
 
 class AwarenessItem {
   String text;
+  bool collapsed = false; // 긴 항목 접기 상태 (화면 전용, 파일에 저장하지 않음)
   final Key id;
   final TextEditingController controller;
 
@@ -61,6 +63,11 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
   late TextEditingController _titleController;
   late List<AwarenessItem> _items;
   int? _activeActionIndex;
+
+  // 순번 직접 변경: 번호를 눌러 새 순번을 입력하고 엔터/포커스 이동/저장 시 그 위치로 옮긴다
+  int? _numberEditIndex;
+  final TextEditingController _numberController = TextEditingController();
+  final FocusNode _numberFocus = FocusNode();
   String? _currentFilePath;
   double _widthRatio = 0.48;
 
@@ -81,6 +88,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
       }
       _items = [AwarenessItem()];
       _activeActionIndex = null;
+      _numberEditIndex = null;
       _currentFilePath = null;
       widget.runRecords.clear();
     });
@@ -228,6 +236,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
     var savePath = '';
     var invalidCharacters = <String>[];
     try {
+      _applyNumberEdit(); // 순번 입력 중에 저장을 눌러도 순번을 먼저 반영
       _syncItemTexts();
       final path = await _localPath;
       final result = _safeFileName(_titleController.text);
@@ -307,8 +316,53 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
   }
 
   @override
+  void dispose() {
+    // 리스너를 먼저 떼어 dispose 중 포커스 해제로 setState가 불리지 않게 한다
+    _numberFocus.removeListener(_onNumberFocusChanged);
+    _numberFocus.dispose();
+    _numberController.dispose();
+    super.dispose();
+  }
+
+  void _onNumberFocusChanged() {
+    if (!_numberFocus.hasFocus) _applyNumberEdit();
+  }
+
+  void _startNumberEdit(int index) {
+    setState(() {
+      _numberEditIndex = index;
+      _numberController.text = '${index + 1}';
+      _numberController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _numberController.text.length,
+      );
+    });
+  }
+
+  /// 입력한 순번 위치로 항목을 옮기고 나머지 순번은 자동으로 밀린다.
+  /// 범위를 벗어나면 맨 앞(1) 또는 맨 뒤로, 숫자가 아니면 그대로 둔다.
+  void _applyNumberEdit() {
+    final from = _numberEditIndex;
+    if (from == null || !mounted) return;
+    final target = int.tryParse(_numberController.text.trim());
+    setState(() {
+      _numberEditIndex = null;
+      if (target != null && from < _items.length) {
+        final to = (target - 1).clamp(0, _items.length - 1);
+        if (to != from) {
+          final moved = _items.removeAt(from);
+          _items.insert(to, moved);
+          _activeActionIndex = null;
+        }
+      }
+    });
+    widget.onItemsChanged(_items);
+  }
+
+  @override
   void initState() {
     super.initState();
+    _numberFocus.addListener(_onNumberFocusChanged);
     _titleController = TextEditingController(text: widget.initialTitle);
     _items = widget.initialItems;
     _currentFilePath = widget.initialFilePath;
@@ -576,32 +630,9 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 12,
-            backgroundColor: Colors.white24,
-            child: Text(
-              "${index + 1}",
-              style: const TextStyle(fontSize: 12, color: Colors.white),
-            ),
-          ),
+          _buildNumberBadge(index),
           const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: item.controller,
-              onChanged: (val) {
-                item.text = val;
-                widget.onItemsChanged(_items);
-              },
-              maxLines: null,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              decoration: const InputDecoration(
-                hintText: "내용 입력...",
-                hintStyle: TextStyle(color: Colors.white38),
-                border: InputBorder.none,
-                isDense: true,
-              ),
-            ),
-          ),
+          Expanded(child: _buildItemText(item)),
           isExpanded
               ? Column(
                   mainAxisSize: MainAxisSize.min,
@@ -673,6 +704,126 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
                 ),
         ],
       ),
+    );
+  }
+
+  // 순번 표시: 누르면 숫자 입력칸으로 바뀐다
+  Widget _buildNumberBadge(int index) {
+    if (_numberEditIndex == index) {
+      return SizedBox(
+        width: 40,
+        child: TextField(
+          controller: _numberController,
+          focusNode: _numberFocus,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 12, color: Colors.white),
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 6),
+            filled: true,
+            fillColor: Colors.white24,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.orangeAccent),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.orangeAccent),
+            ),
+          ),
+          onSubmitted: (_) => _applyNumberEdit(),
+        ),
+      );
+    }
+    return Tooltip(
+      message: '눌러서 순번 변경',
+      child: InkWell(
+        onTap: () => _startNumberEdit(index),
+        customBorder: const CircleBorder(),
+        child: CircleAvatar(
+          radius: 12,
+          backgroundColor: Colors.white24,
+          child: Text(
+            "${index + 1}",
+            style: const TextStyle(fontSize: 12, color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 항목 내용: 한 줄을 넘는 긴 항목에만 하단 가운데 접기(^)/펼치기(v) 버튼을 보인다
+  Widget _buildItemText(AwarenessItem item) {
+    const textStyle = TextStyle(color: Colors.white, fontSize: 14);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(text: item.controller.text, style: textStyle),
+          textDirection: TextDirection.ltr,
+          maxLines: 1,
+        )..layout(maxWidth: constraints.maxWidth);
+        final isLong = painter.didExceedMaxLines;
+        painter.dispose();
+        final collapsed = isLong && item.collapsed;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (collapsed)
+              // 접힌 상태: 첫 줄만 보이고, 누르면 펼쳐서 편집한다
+              GestureDetector(
+                onTap: () => setState(() => item.collapsed = false),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    item.controller.text.replaceAll('\n', ' '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textStyle,
+                  ),
+                ),
+              )
+            else
+              TextField(
+                controller: item.controller,
+                onChanged: (val) {
+                  // 입력 중 한 줄을 넘으면 접기 버튼이 나타나도록 다시 그린다
+                  setState(() => item.text = val);
+                  widget.onItemsChanged(_items);
+                },
+                maxLines: null,
+                style: textStyle,
+                decoration: const InputDecoration(
+                  hintText: "내용 입력...",
+                  hintStyle: TextStyle(color: Colors.white38),
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+              ),
+            if (isLong)
+              Tooltip(
+                message: item.collapsed ? '펼치기' : '접기',
+                child: InkWell(
+                  onTap: () => setState(() => item.collapsed = !item.collapsed),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Icon(
+                      item.collapsed
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
+                      size: 18,
+                      color: Colors.white54,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

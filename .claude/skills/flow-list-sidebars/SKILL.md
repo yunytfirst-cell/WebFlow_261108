@@ -103,6 +103,16 @@ final Function(String?) onLoadDirectoryChanged;
 - 버튼 순서와 색: 새로만들기(`Icons.note_add`, purpleAccent) · 저장(`Icons.save`, blueAccent) · 불러오기(`Icons.file_open`, greenAccent) · 폴더관리(`Icons.folder`, orangeAccent). `ElevatedButton.icon`, 배경 `color.withValues(alpha: 0.3)`, 아이콘 14, 글자 12 흰색, 모서리 8.
 - 패널을 누르면(`Listener.onPointerDown`) `onBringToFront`로 위에 올린다.
 
+### 항목 박스 (`_buildBubbleItem`, 두 위젯 동일 — 2026-11-20 사용자 지시)
+
+- 행: `_buildNumberBadge(index)` → `SizedBox(10)` → `Expanded(_buildItemText(항목))` → 오른쪽 `more_vert`/동작 버튼(↑↓·🎯(끝장만)·+·−·>).
+- **순번 직접 변경**: 순번 `CircleAvatar`(radius 12, white24)를 `Tooltip('눌러서 순번 변경')`+`InkWell(CircleBorder)`로 감싼다. 누르면 그 자리가 폭 40 숫자 입력칸(`_numberController`/`_numberFocus`, `autofocus`, `digitsOnly`, 가운데 정렬, 글자 12, 채움 white24, 모서리 12, 테두리 끝장 blueAccent / 알아차림 orangeAccent)으로 바뀐다(`_numberEditIndex`).
+  `_applyNumberEdit()`가 엔터(`onSubmitted`), 포커스 잃음(`_numberFocus` 리스너), **저장 버튼(`_saveToFile` 맨 앞)**에서 불린다: 입력값-1을 `0..길이-1`로 clamp해 `removeAt`/`insert`로 옮기고(나머지 순번은 자동으로 밀림), 숫자가 아니면 그대로 둔다. `_activeActionIndex = null`, `onGoalsChanged`/`onItemsChanged` 호출. `_clearAll`은 `_numberEditIndex = null`.
+  `dispose()`에서 리스너를 먼저 떼고 focus/controller를 해제한다(해제 중 setState 방지).
+- **긴 항목 접기/펼치기**: 항목 클래스에 `bool collapsed = false`(화면 전용, 파일에 저장 안 함, main이 항목 객체를 보관하므로 사이드바를 닫았다 열어도 유지).
+  `_buildItemText`는 `LayoutBuilder`+`TextPainter(maxLines: 1, 글자 14 흰색)`로 **한 줄을 넘는 항목에만** 박스 내용 하단 가운데에 버튼을 보인다: 펼쳐진 상태 `Icons.keyboard_arrow_up`(^, 툴팁 `접기`), 접힌 상태 `Icons.keyboard_arrow_down`(v, 툴팁 `펼치기`), 크기 18, white54, 좌우 패딩 16.
+  접힌 상태는 줄바꿈을 공백으로 바꾼 첫 줄 `Text(maxLines 1, ellipsis)`만 보이고, 글을 누르면 펼쳐진다. 입력 중(`onChanged`)에는 `setState`로 다시 그려 한 줄을 넘는 순간 버튼이 나타난다.
+
 ## 6. 코드 스타일
 
 - 주석과 사용자에게 보이는 문구는 한국어. 주석은 "왜"를 적는다.
@@ -116,4 +126,4 @@ final Function(String?) onLoadDirectoryChanged;
 
 - `test/list_file_service_test.dart`: 종류별 왕복, 폴더·카운터 줄 분리, 다른 리스트 카운터 무시, 예전 번호 형식 읽기, `pickerInitialDirectory` 정규화.
 - `test/run_counter_service_test.dart`: 줄 생성/읽기, 일반 줄 무시, 접두어가 다른 줄 무시, `todayKey`.
-- `test/goal_list_sidebar_test.dart`: 알아차림 사이드바는 전달받은 카운터만 바꾼다, 오늘 실행 표시와 화살표, 360/768/1280 폭에서 예외 없음.
+- `test/goal_list_sidebar_test.dart`: 알아차림 사이드바는 전달받은 카운터만 바꾼다, 오늘 실행 표시와 화살표, 360/768/1280 폭에서 예외 없음, 순번 입력+엔터로 이동·범위 밖 번호는 맨 뒤, 긴 항목에만 접기/펼치기 버튼(두 리스트).
