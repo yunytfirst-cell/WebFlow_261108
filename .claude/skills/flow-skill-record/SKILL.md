@@ -32,3 +32,4 @@ description: Flow 프로젝트에서 skill(.claude/skills) 기록 규칙과 자�
 - 정말 기록할 규칙이 없었으면 커밋 메시지에 `[skill-ok] <이유>`를 넣으면 통과한다.
 - 훅 시험: 임시 git 저장소(scratchpad)에 `lib/a.dart`만 커밋하고 `echo '{}' | CLAUDE_PROJECT_DIR=<임시> bash .claude/hooks/skill-record-guard.sh` → `decision: block`이 나와야 한다.
 - 훅을 고치면 `bash .claude/hooks/list-sidebar-reminder.sh | python -c "import json,sys; json.load(sys.stdin)"`로 JSON이 깨지지 않았는지 확인한다.
+- 훅 `.sh`는 LF 줄끝으로 둔다(`.gitattributes`의 `*.sh text eol=lf`). CRLF가 섞이면 bash가 `\r` 때문에 깨질 수 있다.
