@@ -289,6 +289,8 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
   /// 접기·펼치기 상태를 바꾸고, 열린 파일이 있으면 그 파일의 접힘 표시도 바로 고친다.
   /// 저장 버튼을 누르지 않고 앱을 닫았다 다시 열어도 사용자가 정한 상태가 유지된다.
   /// 디스크의 제목·항목·카운터는 그대로 두고 접힘 표시만 바꾼다(저장 안 한 편집은 섞지 않음).
+  Future<void> _foldWrite = Future.value();
+
   void _setCollapsed(AwarenessItem item, bool collapsed) {
     setState(() => item.collapsed = collapsed);
     final path = _currentFilePath;
@@ -296,7 +298,8 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
     final screenItems = [
       for (final it in _items) (text: it.controller.text, collapsed: it.collapsed),
     ];
-    () async {
+    // 여러 번 빨리 눌러도 파일 쓰기가 겹치지 않게 순서대로 실행한다
+    _foldWrite = _foldWrite.then((_) async {
       try {
         final file = File(path);
         if (!await file.exists()) return;
@@ -309,7 +312,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
       } on FileSystemException catch (error) {
         debugPrint("알아차림 리스트 접기 상태 저장 실패: $error");
       }
-    }();
+    });
   }
 
   Future<void> _loadFromFile() async {
@@ -799,7 +802,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
     );
   }
 
-  // 항목 내용: 한 줄을 넘는 긴 항목에만 하단 가운데 접기(^)/펼치기(v) 버튼을 보인다
+  // 항목 내용: 한 줄을 넘는 긴 항목에만 상단 가운데 접기(^)/펼치기(v) 버튼을 보인다 (2026-11-21 하단→상단)
   Widget _buildItemText(AwarenessItem item) {
     const textStyle = TextStyle(color: Colors.white, fontSize: 14);
     return LayoutBuilder(
@@ -816,6 +819,24 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (isLong)
+              Tooltip(
+                message: item.collapsed ? '펼치기' : '접기',
+                child: InkWell(
+                  onTap: () => _setCollapsed(item, !item.collapsed),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Icon(
+                      item.collapsed
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
+                      size: 18,
+                      color: Colors.white54,
+                    ),
+                  ),
+                ),
+              ),
             if (collapsed)
               // 접힌 상태: 첫 줄만 보이고, 누르면 펼쳐서 편집한다
               GestureDetector(
@@ -845,24 +866,6 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
                   hintStyle: TextStyle(color: Colors.white38),
                   border: InputBorder.none,
                   isDense: true,
-                ),
-              ),
-            if (isLong)
-              Tooltip(
-                message: item.collapsed ? '펼치기' : '접기',
-                child: InkWell(
-                  onTap: () => _setCollapsed(item, !item.collapsed),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Icon(
-                      item.collapsed
-                          ? Icons.keyboard_arrow_down
-                          : Icons.keyboard_arrow_up,
-                      size: 18,
-                      color: Colors.white54,
-                    ),
-                  ),
                 ),
               ),
           ],

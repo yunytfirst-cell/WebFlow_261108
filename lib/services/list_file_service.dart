@@ -229,7 +229,9 @@ class ListFileService {
   /// 파일 내용에서 접힘 표시만 바꾼다 (제목·항목·카운터는 디스크 내용 그대로).
   /// 접기/펼치기를 누를 때 저장 버튼 없이 바로 기억하되, 저장하지 않은
   /// 다른 편집이 파일에 섞이지 않게 하려는 것이다.
-  /// 같은 글의 항목은 화면 순서대로 짝짓고, 화면에 없는 항목은 그대로 둔다.
+  /// 1) 같은 글의 항목끼리 화면 순서대로 짝짓는다.
+  /// 2) 글이 달라 남은 항목(저장 전에 글을 고친 항목)은 같은 순번끼리 짝짓는다.
+  /// 화면에 짝이 없는 디스크 항목은 그대로 둔다.
   static String applyFoldState(
     String content, {
     required ListFileKind kind,
@@ -237,17 +239,22 @@ class ListFileService {
   }) {
     final data = parse(content, kind: kind);
     final used = List<bool>.filled(screenItems.length, false);
-    final collapsed = <bool>[];
+    final collapsed = List<bool>.of(data.collapsed);
+    final matched = List<bool>.filled(data.items.length, false);
     for (var i = 0; i < data.items.length; i++) {
-      var folded = data.collapsed[i];
       for (var j = 0; j < screenItems.length; j++) {
         if (!used[j] && screenItems[j].text.trim() == data.items[i]) {
-          used[j] = true;
-          folded = screenItems[j].collapsed;
+          used[j] = matched[i] = true;
+          collapsed[i] = screenItems[j].collapsed;
           break;
         }
       }
-      collapsed.add(folded);
+    }
+    for (var i = 0; i < data.items.length && i < screenItems.length; i++) {
+      if (!matched[i] && !used[i]) {
+        used[i] = matched[i] = true;
+        collapsed[i] = screenItems[i].collapsed;
+      }
     }
     return serialize(
       kind: kind,

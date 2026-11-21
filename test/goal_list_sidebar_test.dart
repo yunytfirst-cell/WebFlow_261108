@@ -198,7 +198,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('끝장 리스트: 긴 항목은 하단 버튼으로 접고 펼친다', (tester) async {
+  testWidgets('끝장 리스트: 긴 항목은 상단 버튼으로 접고 펼친다', (tester) async {
     setWide(tester);
     final goals = [GoalItem(text: '첫 줄\n둘째 줄')];
     await tester.pumpWidget(goalSidebar(goals));
