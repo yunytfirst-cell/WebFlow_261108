@@ -55,13 +55,16 @@ void main() async {
   runApp(const MyApp());
 }
 
-/// 주 모니터 작업 영역(작업표시줄 제외)에 맞춘 처음 창 위치·크기 (논리 픽셀).
+/// 처음 창 위치·크기 (논리 픽셀). 크기는 가장 작은 모니터 작업 영역(작업표시줄 제외)에 맞추고,
+/// 위치는 주 모니터 가운데. 어느 모니터로 옮겨도 화면보다 크지 않다.
 Future<Rect> _initialWindowBounds() async {
   try {
     final display = await screenRetriever.getPrimaryDisplay();
+    final all = await screenRetriever.getAllDisplays();
     final Offset pos = display.visiblePosition ?? Offset.zero;
     final Size size = display.visibleSize ?? display.size;
-    return fitWindowToScreen(desired: kDesiredWindowSize, workArea: pos & size);
+    final Size desired = fitToSmallestScreen(kDesiredWindowSize, all.map((d) => d.visibleSize ?? d.size));
+    return fitWindowToScreen(desired: desired, workArea: pos & size);
   } catch (_) {
     // 모니터 정보를 못 읽으면 작은 화면(1280x680)에도 들어가는 크기로 띄운다.
     return fitWindowToScreen(desired: kDesiredWindowSize, workArea: const Rect.fromLTWH(0, 0, 1280, 680));

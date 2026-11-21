@@ -11,18 +11,26 @@ description: Flow 앱 창(윈도우)의 처음 크기·위치·최소 크기·�
 
 1. 원하는 크기는 `kDesiredWindowSize = 650x900` (논리 픽셀). 고정값으로 바로 쓰지 않는다.
 2. 처음 띄울 때 주 모니터의 **작업 영역**(작업표시줄 제외)을 `screen_retriever`의 `getPrimaryDisplay()` → `visiblePosition`/`visibleSize`로 읽는다. 이 값은 Windows에서 이미 배율(DPI)로 나눈 논리 픽셀이라 window_manager와 단위가 같다.
-3. `fitWindowToScreen()` (`lib/services/window_fit.dart`):
+3. **크기는 연결된 모니터 중 가장 작은 작업 영역 기준**: `getAllDisplays()`의 visibleSize로 `fitToSmallestScreen()` (가로·세로 각각 90%). 주 모니터만 보면 큰 모니터에서 띄운 창을 작은 모니터로 옮길 때 다시 넘친다(v1.1.2에서 실제로 겪음: 2560x1440 주 모니터에서는 맞았지만 1920x1080 보조 모니터 작업 영역 1020px보다 창이 1125px로 컸음).
+4. 위치는 `fitWindowToScreen()`(`lib/services/window_fit.dart`)으로 주 모니터 작업 영역에 놓는다:
    - 가로·세로 각각 작업 영역의 **90%**를 넘지 않게 줄인다.
    - 작업 영역 가운데에 놓되, **top은 작업 영역 top보다 위로 가지 않는다**(제목줄 보장).
-4. 최소 크기 `kMinWindowSize = 300x500`도 `fitMinimumSize()`로 맞춘 크기보다 크지 않게 줄인다(최소 크기가 모니터보다 크면 다시 넘친다).
-5. `WindowOptions(center: false, size: 맞춘 크기)` → `waitUntilReadyToShow` 안에서 `setBounds(맞춘 Rect)` 후 show. `center: true`를 쓰지 않는다(크기 맞춘 뒤 위치를 직접 정함).
-6. 모니터 정보를 못 읽으면(예외) 작업 영역 1280x680으로 가정해 맞춘다.
-7. 창 제목은 `Flow v<버전>` (flow-versioning).
+5. 최소 크기 `kMinWindowSize = 300x500`도 `fitMinimumSize()`로 맞춘 크기보다 크지 않게 줄인다(최소 크기가 모니터보다 크면 다시 넘친다).
+6. `WindowOptions(center: false, size: 맞춘 크기)` → `waitUntilReadyToShow` 안에서 `setBounds(맞춘 Rect)` 후 show. `center: true`를 쓰지 않는다(크기 맞춘 뒤 위치를 직접 정함).
+7. 모니터 정보를 못 읽으면(예외) 작업 영역 1280x680으로 가정해 맞춘다.
+8. 창 제목은 `Flow v<버전>` (flow-versioning).
 
 ## 검사
 
-- `test/window_fit_test.dart`: 큰 모니터는 650x900 그대로, 1920x1080 배율 150%(작업 영역 1280x680)에서는 높이 612, 창 전체가 작업 영역 안, 최소 크기 축소.
+- `test/window_fit_test.dart`: 큰 모니터는 650x900 그대로, 1920x1080 배율 150%(작업 영역 1280x680)에서는 높이 612, 창 전체가 작업 영역 안, 최소 크기 축소, 여러 모니터면 가장 작은 모니터 기준(125% 배율 1920x1080 → 높이 734).
 - 창 크기 규칙을 바꾸면 이 테스트도 함께 고친다.
+
+## 실제 창 확인법 (실행 후 바로)
+
+```
+powershell: SetProcessDPIAware 후 GetWindowRect(flow 창) 와 [Screen]::AllScreens WorkingArea 비교 (물리 픽셀)
+```
+창 높이가 **모든** 모니터 작업 영역 높이보다 작아야 한다.
 
 ## 모니터 확인법 (디버깅)
 

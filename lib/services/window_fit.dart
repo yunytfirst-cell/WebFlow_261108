@@ -29,3 +29,14 @@ Rect fitWindowToScreen({
 /// 최소 크기도 모니터보다 크지 않게 줄인다.
 Size fitMinimumSize(Size minimum, Size fitted) =>
     Size(math.min(minimum.width, fitted.width), math.min(minimum.height, fitted.height));
+
+/// 모니터가 여러 대면 **가장 작은 모니터 작업 영역**의 [fraction] 안으로 원하는 크기를 줄인다.
+/// 창을 어느 모니터로 끌어 옮겨도 화면보다 커지지 않게 하기 위해서다.
+Size fitToSmallestScreen(Size desired, Iterable<Size> workAreas, {double fraction = 0.9}) {
+  double w = desired.width, h = desired.height;
+  for (final a in workAreas) {
+    w = math.min(w, a.width * fraction);
+    h = math.min(h, a.height * fraction);
+  }
+  return Size(w.roundToDouble(), h.roundToDouble());
+}

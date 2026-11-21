@@ -30,4 +30,10 @@ void main() {
   test('최소 크기도 모니터에 맞춰 줄인다', () {
     expect(fitMinimumSize(kMinWindowSize, const Size(650, 450)), const Size(300, 450));
   });
+
+  test('모니터 여러 대면 가장 작은 모니터에 맞춘다 (2560x1380 + 1920x1020, 배율 125%)', () {
+    final size = fitToSmallestScreen(kDesiredWindowSize, const [Size(2048, 1104), Size(1536, 816), Size(1536, 816)]);
+    expect(size.height, 734);
+    expect(size.width, 650);
+  });
 }
