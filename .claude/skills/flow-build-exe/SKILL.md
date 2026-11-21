@@ -23,6 +23,8 @@ python tools/build_exe.py --skip-build # 이미 빌드된 결과로 묶기만
 
 `dist/`, `build/`는 git에 올리지 않는다(.gitignore).
 
+버전: exe 파일 속성(파일 버전)과 창 제목은 `pubspec.yaml` 버전을 따른다. 배포 전에 버전이 올라가 있는지 확인한다(flow-versioning). 결과 보고에 버전을 함께 적는다.
+
 ## 스크립트 규칙 (`tools/build_exe.py`)
 
 1. `flutter build windows --release` → `build\windows\x64\runner\Release`.

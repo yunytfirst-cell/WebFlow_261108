@@ -10,8 +10,9 @@
 
 1. `flutter analyze lib test` / `flutter test` 통과 (기존 경고 9개만 남아야 함)
 2. 관련 SKILL.md 갱신 (규격이 바뀌었으면 reference 사본도)
-3. 커밋 → 현재 작업 브랜치를 `origin`(GitHub `yunytfirst-cell/WebFlow_261108`)에 push. main에 직접 push·병합은 먼저 확인.
-4. `python tools/run_app.py`로 앱을 실행해 화면에 띄우고, 무엇을 확인하면 되는지 알려준다.
+3. 앱 코드가 바뀌었으면 버전 올리기: `pubspec.yaml`·`lib/app_version.dart`·`CHANGELOG.md` (`flow-versioning`)
+4. 커밋 → 현재 작업 브랜치와 버전 태그(vX.Y.Z)를 `origin`(GitHub `yunytfirst-cell/WebFlow_261108`)에 push. main에 직접 push·병합은 먼저 확인.
+5. `python tools/run_app.py`로 앱을 실행해 화면에 띄우고, 무엇을 확인하면 되는지 알려준다.
 
 ## Skills (.claude/skills/)
 
@@ -20,6 +21,7 @@
 | 성공의 열쇠·알아차림 리스트, 실행 카운터, 저장·불러오기·새로만들기·폴더 | `flow-list-sidebars` |
 | 앱 실행해서 화면에 띄우기 (작업 끝날 때마다) | `flow-run-app` |
 | 배포용 실행파일(dist/Flow.exe) 만들기 | `flow-build-exe` |
+| 버전 번호·변경 이력(CHANGELOG)·git 태그 | `flow-versioning` |
 
 맞는 skill이 없으면 새로 만들고 이 표에 추가한다.
 

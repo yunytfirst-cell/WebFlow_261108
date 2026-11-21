@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p; 
 import 'package:flutter/services.dart';
 import 'settings/transparency_slider.dart';
+import '../app_version.dart';
 
 class SettingsDialog extends StatefulWidget {
   final int initialMaxSeconds;
@@ -184,7 +185,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
           ),
         ),
       ),
+      actionsAlignment: MainAxisAlignment.spaceBetween,
       actions: [
+        const Text("Flow $appVersionLabel (빌드 $appBuild)", style: TextStyle(color: Colors.white38, fontSize: 11)),
         TextButton(onPressed: () => Navigator.pop(context), child: const Text("닫기", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold))),
       ],
     );

@@ -26,6 +26,7 @@ import 'services/audio_manager.dart';
 import 'services/daily_schedule_service.dart';
 import 'package:video_player/video_player.dart';
 import 'models/design_theme.dart';
+import 'app_version.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,7 @@ void main() async {
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.normal,
       minimumSize: Size(300, 500),
+      title: 'Flow $appVersionLabel',
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.setHasShadow(false);
