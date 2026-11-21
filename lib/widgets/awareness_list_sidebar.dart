@@ -203,17 +203,22 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
     required String path,
     required String fileName,
     required List<String> invalidCharacters,
+    String? keptPath,
   }) async {
     if (!mounted) return;
     final conversionText = invalidCharacters.isEmpty
         ? '변환된 문자가 없습니다.'
         : invalidCharacters.toSet().join(', ');
+    // 제목이 바뀌어 새 파일로 저장했으면 기존 파일이 그대로 있다고 알린다
+    final keptText = keptPath == null
+        ? ''
+        : '\n\n제목이 바뀌어 새 파일로 저장했습니다.\n기존 파일은 그대로 있습니다:\n$keptPath';
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('저장 완료'),
         content: SelectableText(
-          '파일명:\n$fileName\n\n저장 위치:\n$path\n\n자동 변환된 문자:\n$conversionText',
+          '파일명:\n$fileName\n\n저장 위치:\n$path\n\n자동 변환된 문자:\n$conversionText$keptText',
         ),
         actions: [
           TextButton(
@@ -242,7 +247,15 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
       final result = _safeFileName(_titleController.text);
       invalidCharacters = result.invalidCharacters;
       final fileName = result.fileName;
-      final file = File(_currentFilePath ?? '$path/$fileName');
+      // 제목이 열린 파일 이름과 다르면 같은 폴더에 제목 이름으로 새 파일을 만들고 기존 파일은 둔다
+      final previousPath = _currentFilePath;
+      final file = File(ListFileService.saveTargetPath(
+        currentFilePath: previousPath,
+        directory: path,
+        fileName: fileName,
+      ));
+      final keptPath =
+          previousPath != null && previousPath != file.path ? previousPath : null;
       savePath = file.path;
       final content = ListFileService.serialize(
         kind: ListFileKind.awareness,
@@ -259,6 +272,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
           path: file.path,
           fileName: file.path.split(RegExp(r'[/\\]')).last,
           invalidCharacters: invalidCharacters,
+          keptPath: keptPath,
         );
       }
     } on FileSystemException catch (error) {

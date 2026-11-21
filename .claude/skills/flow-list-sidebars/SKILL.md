@@ -51,7 +51,14 @@ description: Flow 앱의 "성공의 열쇠(끝장 리스트, GoalListSidebar)"�
 각 사이드바의 작업 폴더 `_localPath` = `widget.loadDirectory`(존재할 때) → 없으면 `ListFileService.directoryFor(kind)`.
 
 - **불러오기**: `FilePicker.platform.pickFiles(initialDirectory: ListFileService.pickerInitialDirectory(path), type: FileType.custom, allowedExtensions: ['txt'])`. 어떤 폴더의 txt든 열 수 있다. 열면 `ListFileService.parse(내용, kind: 자기 kind)`로 읽고, 카운터 Map을 `clear()` 후 `addAll`, `_currentFilePath`와 `onFilePathChanged`를 갱신하고, **`onLoadDirectoryChanged(file.parent.path)`**로 자기 리스트의 불러온 폴더만 기록한다.
-- **저장**: `File(_currentFilePath ?? '$path/$fileName')`. 불러온 파일이 있으면 그 파일에 덮어쓰고, 없으면 작업 폴더에 `_safeFileName(제목)` 이름으로 새로 만든다. `ListFileService.serialize(kind: 자기 kind, …)`.
+- **저장** (2026-11-21 사용자 지시 "오늘의 할일 제목이 기존 파일 이름과 다르면 제목으로 새 파일, 기존 파일은 유지", 두 리스트 동일): `File(ListFileService.saveTargetPath(currentFilePath: _currentFilePath, directory: path, fileName: _safeFileName(제목).fileName))`. `ListFileService.serialize(kind: 자기 kind, …)`.
+  - 열린 파일이 없으면 작업 폴더에 `'$path/$fileName'`으로 만든다.
+  - 열린 파일 이름이 제목 파일명과 같으면(대소문자 무시, `제목 (n).txt`도 같은 제목) 그 파일에 덮어쓴다.
+  - 제목이 다르면 **열린 파일과 같은 폴더**에 제목 이름으로 새 파일을 만들고 기존 파일은 건드리지 않는다. 저장 뒤 `_currentFilePath`는 새 파일이 된다.
+  - 새로 만들 이름의 파일이 이미 있으면 덮어쓰지 않고 `제목 (2).txt`, `제목 (3).txt` …로 만든다(열린 파일이 없을 때도 같음).
+  - 새 파일로 저장했으면 저장 완료 대화상자 끝에 `제목이 바뀌어 새 파일로 저장했습니다.
+기존 파일은 그대로 있습니다:
+<기존 경로>`를 붙인다(`_showSaveSuccessDialog(keptPath:)`).
 - **새로만들기(`_clearAll`)**: 제목·항목·카운터·열린 파일 경로만 비운다. 불러온 폴더는 지우지 않는다. 그래서 그 뒤 저장은 그 리스트가 마지막으로 불러온 폴더(없으면 기본 폴더)에 새 파일로 된다.
 - **폴더관리**: 열린 파일이 있으면 그 폴더, 없으면 `_localPath`를 `explorer.exe`로 연다.
 - 파일명 규칙(`_safeFileName`): 금지문자 `<>:"/\|?*`와 제어문자는 ` x`로, 끝의 점·공백도 ` x`로 바꾸고, `.txt` 중복 제거, Windows 예약어(con, prn, aux, nul, com1-9, lpt1-9)나 빈 이름이면 §1의 기본 파일명으로 한다. 바뀐 문자는 저장 성공 대화상자에 알린다.
@@ -87,7 +94,7 @@ final Function(String?) onLoadDirectoryChanged;
 
 ## 4. 서비스 파일 (정본 사본: `reference/`)
 
-- `reference/list_file_service.dart`: `ListFileKind`(titleMarker, itemMarker, runLinePrefix, directoryName), `ListFileData`, `ListFileService.directoryFor / pickerInitialDirectory / serialize / parse`.
+- `reference/list_file_service.dart`: `ListFileKind`(titleMarker, itemMarker, runLinePrefix, directoryName), `ListFileData`, `ListFileService.directoryFor / pickerInitialDirectory / saveTargetPath / serialize / parse`.
   - `serialize`: 제목 줄 → 카운터 줄들(날짜순, 0회 제외) → 항목 블록들.
   - `parse(content, kind:)`: 항목 블록과 예전 형식(`1. 항목`)을 모두 읽는다. 제목 줄은 `[PJT]`, `[AWARE]` 둘 다 인정한다. 자기 `runLinePrefix` 카운터 줄만 기록하고, 다른 리스트의 카운터 줄(`RunCounterService.isRunLine`)은 버린다(항목 텍스트로도 넣지 않음).
 - `reference/run_counter_service.dart`: `defaultLinePrefix = '[RUN] '`, `maxCount = 99`, 줄 정규식 `^(\[[A-Z_]+\] )(\d{4}-\d{2}-\d{2}): (\d+)\s*$`, `todayKey`(yyyy-MM-dd), `isRunLine`, `parseLine(line, linePrefix:)`, `toLines(records, linePrefix:)`, `total`.
@@ -124,6 +131,6 @@ final Function(String?) onLoadDirectoryChanged;
 
 ## 7. 테스트 (반드시 통과)
 
-- `test/list_file_service_test.dart`: 종류별 왕복, 폴더·카운터 줄 분리, 다른 리스트 카운터 무시, 예전 번호 형식 읽기, `pickerInitialDirectory` 정규화.
+- `test/list_file_service_test.dart`: 종류별 왕복, 폴더·카운터 줄 분리, 다른 리스트 카운터 무시, 예전 번호 형식 읽기, `pickerInitialDirectory` 정규화, `saveTargetPath`(같은 제목 덮어쓰기·다른 제목 새 파일·번호 붙이기·번호 붙은 파일 인정·특수문자·실제 파일 유지).
 - `test/run_counter_service_test.dart`: 줄 생성/읽기, 일반 줄 무시, 접두어가 다른 줄 무시, `todayKey`.
 - `test/goal_list_sidebar_test.dart`: 알아차림 사이드바는 전달받은 카운터만 바꾼다, 오늘 실행 표시와 화살표, 360/768/1280 폭에서 예외 없음, 순번 입력+엔터로 이동·범위 밖 번호는 맨 뒤, 긴 항목에만 접기/펼치기 버튼(두 리스트).

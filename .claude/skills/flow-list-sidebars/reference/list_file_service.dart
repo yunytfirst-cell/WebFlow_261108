@@ -70,6 +70,54 @@ class ListFileService {
     return normalized;
   }
 
+  /// 저장할 파일 경로를 정한다 (2026-11-21 사용자 지시).
+  ///
+  /// - 열린 파일이 없으면 작업 폴더 [directory]에 제목 파일명 [fileName]으로 만든다.
+  /// - 열린 파일 이름이 제목 파일명과 같으면(대소문자 무시, `제목 (2).txt`처럼 번호가 붙은 것도 같음)
+  ///   그 파일에 덮어쓴다.
+  /// - 제목이 열린 파일 이름과 다르면 **열린 파일과 같은 폴더에 제목 이름으로 새 파일**을 만든다.
+  ///   열린(기존) 파일은 건드리지 않는다.
+  /// - 새로 만들 이름의 파일이 이미 있으면 덮어쓰지 않고 `제목 (2).txt`, `제목 (3).txt` … 로 만든다.
+  static String saveTargetPath({
+    required String? currentFilePath,
+    required String directory,
+    required String fileName,
+    bool Function(String path)? exists,
+  }) {
+    final fileExists = exists ?? (String path) => File(path).existsSync();
+    if (currentFilePath != null &&
+        _sameTitleFile(_baseName(currentFilePath), fileName)) {
+      return currentFilePath;
+    }
+    final folder = currentFilePath == null
+        ? directory
+        : currentFilePath.substring(
+            0, currentFilePath.length - _baseName(currentFilePath).length - 1);
+    // 열린 파일이 없을 때 경로 조합은 기존 방식('$path/$fileName')을 유지한다
+    final sep = currentFilePath == null ? '/' : Platform.pathSeparator;
+    var candidate = '$folder$sep$fileName';
+    final stem = _stem(fileName);
+    for (var n = 2; fileExists(candidate); n++) {
+      candidate = '$folder$sep$stem ($n).txt';
+    }
+    return candidate;
+  }
+
+  static String _baseName(String path) => path.split(RegExp(r'[/\\]')).last;
+
+  static String _stem(String fileName) => fileName.toLowerCase().endsWith('.txt')
+      ? fileName.substring(0, fileName.length - 4)
+      : fileName;
+
+  /// `제목.txt`와 `제목 (3).txt`를 같은 제목의 파일로 본다 (Windows처럼 대소문자 무시).
+  static bool _sameTitleFile(String existingName, String fileName) {
+    final pattern = RegExp(
+      '^${RegExp.escape(_stem(fileName))}' r'( \(\d+\))?\.txt$',
+      caseSensitive: false,
+    );
+    return pattern.hasMatch(existingName);
+  }
+
   static String serialize({
     required ListFileKind kind,
     required String title,

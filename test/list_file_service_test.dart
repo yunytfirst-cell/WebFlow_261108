@@ -83,4 +83,78 @@ void main() {
       'C:${sep}Docs$sep',
     );
   });
+
+  group('saveTargetPath: 제목이 파일 이름과 다르면 새 파일, 기존 파일 유지', () {
+    final sep = Platform.pathSeparator;
+    final folder = 'C:${sep}Lists';
+    final opened = '$folder$sep월요일.txt';
+
+    test('열린 파일이 없으면 작업 폴더에 제목 파일명으로', () {
+      expect(
+        ListFileService.saveTargetPath(
+            currentFilePath: null, directory: 'D:/Docs', fileName: '할일.txt', exists: (_) => false),
+        'D:/Docs/할일.txt',
+      );
+    });
+
+    test('제목이 열린 파일 이름과 같으면 그 파일에 덮어쓴다 (대소문자 무시)', () {
+      expect(
+        ListFileService.saveTargetPath(
+            currentFilePath: opened, directory: 'D:/Docs', fileName: '월요일.txt', exists: (_) => true),
+        opened,
+      );
+      final upper = '$folder${sep}Plan.TXT';
+      expect(
+        ListFileService.saveTargetPath(
+            currentFilePath: upper, directory: 'D:/Docs', fileName: 'plan.txt', exists: (_) => true),
+        upper,
+      );
+    });
+
+    test('제목이 다르면 열린 파일과 같은 폴더에 제목 이름으로 새 파일', () {
+      expect(
+        ListFileService.saveTargetPath(
+            currentFilePath: opened, directory: 'D:/Docs', fileName: '화요일.txt', exists: (p) => p == opened),
+        '$folder$sep화요일.txt',
+      );
+    });
+
+    test('새 이름 파일이 이미 있으면 덮어쓰지 않고 번호를 붙인다', () {
+      final taken = {opened, '$folder$sep화요일.txt', '$folder$sep화요일 (2).txt'};
+      expect(
+        ListFileService.saveTargetPath(
+            currentFilePath: opened, directory: 'D:/Docs', fileName: '화요일.txt', exists: taken.contains),
+        '$folder$sep화요일 (3).txt',
+      );
+    });
+
+    test('번호가 붙은 파일(화요일 (3).txt)을 열고 제목이 화요일이면 그 파일에 덮어쓴다', () {
+      final numbered = '$folder$sep화요일 (3).txt';
+      expect(
+        ListFileService.saveTargetPath(
+            currentFilePath: numbered, directory: 'D:/Docs', fileName: '화요일.txt', exists: (_) => true),
+        numbered,
+      );
+    });
+
+    test('제목에 정규식 특수문자가 있어도 같은 제목으로 인정', () {
+      final special = '$folder${sep}a+b (1).txt';
+      expect(
+        ListFileService.saveTargetPath(
+            currentFilePath: special, directory: 'D:/Docs', fileName: 'a+b (1).txt', exists: (_) => true),
+        special,
+      );
+    });
+
+    test('실제 파일: 제목을 바꿔 저장해도 기존 파일 내용이 그대로 남는다', () {
+      final dir = Directory.systemTemp.createTempSync('flow_save_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final old = File('${dir.path}$sep월요일.txt')..writeAsStringSync('기존');
+      final target = ListFileService.saveTargetPath(
+          currentFilePath: old.path, directory: dir.path, fileName: '화요일.txt');
+      File(target).writeAsStringSync('새것');
+      expect(old.readAsStringSync(), '기존');
+      expect(File('${dir.path}$sep화요일.txt').readAsStringSync(), '새것');
+    });
+  });
 }
