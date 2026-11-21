@@ -33,3 +33,8 @@ description: Flow 프로젝트에서 skill(.claude/skills) 기록 규칙과 자�
 - 훅 시험: 임시 git 저장소(scratchpad)에 `lib/a.dart`만 커밋하고 `echo '{}' | CLAUDE_PROJECT_DIR=<임시> bash .claude/hooks/skill-record-guard.sh` → `decision: block`이 나와야 한다.
 - 훅을 고치면 `bash .claude/hooks/list-sidebar-reminder.sh | python -c "import json,sys; json.load(sys.stdin)"`로 JSON이 깨지지 않았는지 확인한다.
 - 훅 `.sh`는 LF 줄끝으로 둔다(`.gitattributes`의 `*.sh text eol=lf`). CRLF가 섞이면 bash가 `\r` 때문에 깨질 수 있다.
+
+## 더 빠른 방법 (작업하며 배운 것)
+
+- 여러 파일을 한꺼번에 문자열 치환할 때는 bash heredoc 안 `python -` 대신 **scratchpad에 .py 파일을 Write로 만들어 실행**한다. heredoc 안 파이썬 문자열에서는 Dart의 `r'[/\]'`, `\n` 같은 역슬래시가 깨져 치환이 실패한다(2026-11-21 두 번 실패). 파일은 `open(..., newline='')`로 써서 줄끝을 바꾸지 않는다.
+- 한글 바로 앞 문자열 보간은 `${sep}월` 대신 `$sep월`로 쓴다(Dart 식별자는 ASCII라 lint `unnecessary_brace_in_string_interps`가 난다).
