@@ -4,7 +4,7 @@
 
 ## 제 1원칙 (2026-11-12 사용자 지시, 모든 규칙보다 먼저)
 
-**skill을 시작 전, 끝난 뒤 항상 검사하고 기록한다. 말하지 않아도 한다.** 시작 전에는 아래 표에서 맞는 SKILL.md를 다시 열고 관련 줄을 grep으로 확인한다. 끝난 뒤에는 `flutter analyze lib test`, `flutter test`로 검토하고 새로 정한 규칙·절차를 SKILL.md에 기록한다.
+**skill을 시작 전, 끝난 뒤 항상 검사하고 기록한다. 말하지 않아도 한다.** (2026-11-21 재지시 "내가 명령하지 않아도, skill에 저장해라") 사용자가 문제·불편을 말하면 고친 뒤 원인과 규칙을 맞는 skill에 저장한다. 맞는 skill이 없으면 새로 만들고 아래 표에 추가한다. 답변에는 어느 skill에 무엇을 저장했는지 한 줄로 보고한다. 시작 전에는 아래 표에서 맞는 SKILL.md를 다시 열고 관련 줄을 grep으로 확인한다. 끝난 뒤에는 `flutter analyze lib test`, `flutter test`로 검토하고 새로 정한 규칙·절차를 SKILL.md에 기록한다.
 
 ## 작업이 끝나면 (묻지 말고 이 순서로)
 
@@ -23,10 +23,12 @@
 | 배포용 실행파일(dist/Flow.exe) 만들기 | `flow-build-exe` |
 | 버전 번호·변경 이력(CHANGELOG)·git 태그 | `flow-versioning` |
 | 창 크기·위치(모니터보다 작게), 창 제목·최소 크기 | `flow-window` |
+| skill 기록 규칙(명령 없어도 저장)·자동 점검 훅 | `flow-skill-record` |
 
 맞는 skill이 없으면 새로 만들고 이 표에 추가한다.
 
 ## 자동 점검 (.claude/settings.json 훅)
 
 - 요청마다: 위 원칙을 상기시키는 문구를 넣는다 (`.claude/hooks/list-sidebar-reminder.sh`).
+- 작업 종료 시: 앱 코드(lib/ windows/ tools/ pubspec.yaml)가 바뀌었는데 .claude/skills가 함께 바뀌지 않았으면 종료를 막는다 (`.claude/hooks/skill-record-guard.sh`, 기록할 게 없으면 커밋 메시지에 `[skill-ok]`).
 - 작업 종료 시: 리스트 관련 파일이 바뀌었으면 테스트, reference 사본 일치, SKILL.md 갱신 여부를 검사한다 (`.claude/hooks/list-sidebar-guard.sh`).

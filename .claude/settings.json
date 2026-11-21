@@ -19,6 +19,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/list-sidebar-guard.sh\"",
             "timeout": 300,
             "statusMessage": "성공의 열쇠/알아차림 리스트 점검 중..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/skill-record-guard.sh\"",
+            "timeout": 30,
+            "statusMessage": "skill 기록 점검 중..."
           }
         ]
       }
