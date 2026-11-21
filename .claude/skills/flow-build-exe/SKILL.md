@@ -36,4 +36,11 @@ python tools/build_exe.py --skip-build # 이미 빌드된 결과로 묶기만
 
 - 시작 전: 코드 변경이 함께 있으면 `flutter analyze lib test`, `flutter test`가 통과하는지 먼저 확인한다.
 - 실행 후: 결과 경로·크기를 보고하고, 실제로 실행해 보지 않았으면 그렇다고 말한다.
+- 빌드 후 확인 (2026-11-21부터 매번, PowerShell):
+  ```
+  (Get-Item dist\Flow.exe).VersionInfo | Select FileVersion, ProductVersion   # pubspec 버전과 같아야 함 (예: 1.2.0+8)
+  Start-Process dist\Flow.exe; Get-Process | ? { $_.MainWindowTitle -like 'Flow v*' } | Select Path, MainWindowTitle
+  ```
+  단일 exe를 실제로 띄워 창 제목 `Flow v<버전>`이 보이면 성공으로 보고한다. 개발용 `build\...low.exe` 창과 함께 떠 있어도 된다.
+- 빌드 기록: v1.2.0+8 → `dist\Flow.exe` 16.4MB, 파일 30개 묶음 (2026-11-21).
 - 빌드 방법이 바뀌면 이 문서와 스크립트를 함께 고친다.
