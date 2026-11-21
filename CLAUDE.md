@@ -22,6 +22,7 @@
 | 앱 실행해서 화면에 띄우기 (작업 끝날 때마다) | `flow-run-app` |
 | 배포용 실행파일(dist/Flow.exe) 만들기 | `flow-build-exe` |
 | 버전 번호·변경 이력(CHANGELOG)·git 태그 | `flow-versioning` |
+| 창 크기·위치(모니터보다 작게), 창 제목·최소 크기 | `flow-window` |
 
 맞는 skill이 없으면 새로 만들고 이 표에 추가한다.
 

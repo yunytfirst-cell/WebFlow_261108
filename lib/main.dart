@@ -27,27 +27,45 @@ import 'services/daily_schedule_service.dart';
 import 'package:video_player/video_player.dart';
 import 'models/design_theme.dart';
 import 'app_version.dart';
+import 'services/window_fit.dart';
+import 'package:screen_retriever/screen_retriever.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     await windowManager.ensureInitialized();
-    WindowOptions windowOptions = const WindowOptions(
-      size: Size(650, 900),
-      center: true,
+    // 창이 모니터보다 크면 제목줄이 화면 밖으로 나가 마우스로 옮길 수 없다 → 작업 영역에 맞춘다.
+    final Rect bounds = await _initialWindowBounds();
+    WindowOptions windowOptions = WindowOptions(
+      size: bounds.size,
+      center: false,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.normal,
-      minimumSize: Size(300, 500),
+      minimumSize: fitMinimumSize(kMinWindowSize, bounds.size),
       title: 'Flow $appVersionLabel',
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.setBounds(bounds);
       await windowManager.setHasShadow(false);
       await windowManager.show();
       await windowManager.focus();
     });
   }
   runApp(const MyApp());
+}
+
+/// 주 모니터 작업 영역(작업표시줄 제외)에 맞춘 처음 창 위치·크기 (논리 픽셀).
+Future<Rect> _initialWindowBounds() async {
+  try {
+    final display = await screenRetriever.getPrimaryDisplay();
+    final Offset pos = display.visiblePosition ?? Offset.zero;
+    final Size size = display.visibleSize ?? display.size;
+    return fitWindowToScreen(desired: kDesiredWindowSize, workArea: pos & size);
+  } catch (_) {
+    // 모니터 정보를 못 읽으면 작은 화면(1280x680)에도 들어가는 크기로 띄운다.
+    return fitWindowToScreen(desired: kDesiredWindowSize, workArea: const Rect.fromLTWH(0, 0, 1280, 680));
+  }
 }
 
 class MyApp extends StatelessWidget {

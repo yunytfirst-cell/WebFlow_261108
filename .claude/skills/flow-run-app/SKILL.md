@@ -11,6 +11,7 @@ description: Flow 앱 작업을 마친 뒤 사용자가 직접 확인할 수 있
 
 - 앱 코드(lib/, assets/, pubspec.yaml, windows/)를 바꾼 작업이 끝나면 **묻지 말고 항상** 실행한다.
 - 순서: `flutter analyze lib test` / `flutter test` 통과 → 관련 스킬 갱신 → 버전 올리기(flow-versioning) → 커밋 → `git push`(현재 작업 브랜치 + 버전 태그, origin) → 앱 실행.
+- 띄운 창은 모니터 작업 영역 안에 들어와야 한다(제목줄이 보여서 마우스로 옮길 수 있어야 함). 넘치면 flow-window 규칙을 확인한다.
 - 실행 후 창 제목에 `Flow vX.Y.Z`가 새 버전으로 보이는지 확인하라고 알려준다.
 - 문서·설정만 바꿨으면 실행하지 않는다.
 
