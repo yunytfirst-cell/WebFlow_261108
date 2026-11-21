@@ -14,7 +14,7 @@ import 'run_counter_panel.dart';
 
 class AwarenessItem {
   String text;
-  bool collapsed = false; // 긴 항목 접기 상태 (화면 전용, 파일에 저장하지 않음)
+  bool collapsed = false; // 긴 항목 접기 상태 (파일 항목 블록의 [FOLDED] 줄로 저장)
   final Key id;
   final TextEditingController controller;
 
@@ -261,6 +261,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
         kind: ListFileKind.awareness,
         title: _titleController.text,
         items: _items.map((item) => item.controller.text).toList(),
+        collapsed: _items.map((item) => item.collapsed).toList(),
         runRecords: widget.runRecords,
       );
 
@@ -283,6 +284,32 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
         error: error,
       );
     }
+  }
+
+  /// 접기·펼치기 상태를 바꾸고, 열린 파일이 있으면 그 파일의 접힘 표시도 바로 고친다.
+  /// 저장 버튼을 누르지 않고 앱을 닫았다 다시 열어도 사용자가 정한 상태가 유지된다.
+  /// 디스크의 제목·항목·카운터는 그대로 두고 접힘 표시만 바꾼다(저장 안 한 편집은 섞지 않음).
+  void _setCollapsed(AwarenessItem item, bool collapsed) {
+    setState(() => item.collapsed = collapsed);
+    final path = _currentFilePath;
+    if (path == null) return;
+    final screenItems = [
+      for (final it in _items) (text: it.controller.text, collapsed: it.collapsed),
+    ];
+    () async {
+      try {
+        final file = File(path);
+        if (!await file.exists()) return;
+        final updated = ListFileService.applyFoldState(
+          await file.readAsString(),
+          kind: ListFileKind.awareness,
+          screenItems: screenItems,
+        );
+        await file.writeAsString(updated, flush: true);
+      } on FileSystemException catch (error) {
+        debugPrint("알아차림 리스트 접기 상태 저장 실패: $error");
+      }
+    }();
   }
 
   Future<void> _loadFromFile() async {
@@ -308,8 +335,11 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
           ..addAll(data.runRecords);
         if (data.title != null) _titleController.text = data.title!;
 
-        for (final itemText in data.items) {
-          _items.add(AwarenessItem(text: itemText)..controller.text = itemText);
+        for (var i = 0; i < data.items.length; i++) {
+          final itemText = data.items[i];
+          _items.add(AwarenessItem(text: itemText)
+            ..controller.text = itemText
+            ..collapsed = data.collapsed[i]);
         }
 
         if (_items.isEmpty) _items.add(AwarenessItem());
@@ -789,7 +819,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
             if (collapsed)
               // 접힌 상태: 첫 줄만 보이고, 누르면 펼쳐서 편집한다
               GestureDetector(
-                onTap: () => setState(() => item.collapsed = false),
+                onTap: () => _setCollapsed(item, false),
                 child: SizedBox(
                   width: double.infinity,
                   child: Text(
@@ -821,7 +851,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
               Tooltip(
                 message: item.collapsed ? '펼치기' : '접기',
                 child: InkWell(
-                  onTap: () => setState(() => item.collapsed = !item.collapsed),
+                  onTap: () => _setCollapsed(item, !item.collapsed),
                   borderRadius: BorderRadius.circular(8),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -157,4 +157,57 @@ void main() {
       expect(File('${dir.path}$sep화요일.txt').readAsStringSync(), '새것');
     });
   });
+
+  for (final kind in ListFileKind.values) {
+    test('${kind.name} files keep folded (collapsed) state per item', () {
+      final serialized = ListFileService.serialize(
+        kind: kind,
+        title: '접기',
+        items: ['긴 항목\n둘째 줄', '펼친 항목', '[FOLDED]로 시작하는 글'],
+        runRecords: {},
+        collapsed: [true, false, false],
+      );
+      expect(serialized, contains('[${kind.itemMarker}:1]\n[FOLDED]\n긴 항목'));
+
+      final parsed = ListFileService.parse(serialized, kind: kind);
+      expect(parsed.items, ['긴 항목\n둘째 줄', '펼친 항목', '[FOLDED]로 시작하는 글']);
+      expect(parsed.collapsed, [true, false, false]);
+    });
+
+    test('${kind.name} applyFoldState changes only fold marks on disk', () {
+      final disk = ListFileService.serialize(
+        kind: kind,
+        title: '디스크 제목',
+        items: ['가', '나', '가'],
+        runRecords: {'2026-11-21': 2},
+        collapsed: [false, true, false],
+      );
+
+      final updated = ListFileService.applyFoldState(
+        disk,
+        kind: kind,
+        screenItems: [
+          (text: '가', collapsed: true),
+          (text: '나', collapsed: false),
+          (text: '가', collapsed: false),
+          (text: '저장 안 한 새 항목', collapsed: true),
+        ],
+      );
+      final parsed = ListFileService.parse(updated, kind: kind);
+
+      expect(parsed.title, '디스크 제목');
+      expect(parsed.items, ['가', '나', '가']);
+      expect(parsed.runRecords, {'2026-11-21': 2});
+      expect(parsed.collapsed, [true, false, false]);
+    });
+  }
+
+  test('old files without fold marks open fully expanded', () {
+    final parsed = ListFileService.parse(
+      '[PJT]: 예전\n[GOAL:1]\n항목\n[END_GOAL]\n1. 옛 형식\n',
+      kind: ListFileKind.goal,
+    );
+    expect(parsed.items, ['항목', '옛 형식']);
+    expect(parsed.collapsed, [false, false]);
+  });
 }

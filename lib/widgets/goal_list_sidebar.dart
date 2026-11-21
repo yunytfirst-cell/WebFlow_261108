@@ -14,7 +14,7 @@ import 'run_counter_panel.dart';
 
 class GoalItem {
   String text;
-  bool collapsed = false; // 긴 항목 접기 상태 (화면 전용, 파일에 저장하지 않음)
+  bool collapsed = false; // 긴 항목 접기 상태 (파일 항목 블록의 [FOLDED] 줄로 저장)
   final Key id; // 각 항목의 고유 식별자
   final TextEditingController controller; // 텍스트 꼬임 방지
 
@@ -283,6 +283,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
         kind: ListFileKind.goal,
         title: _titleController.text,
         items: _goals.map((goal) => goal.controller.text).toList(),
+        collapsed: _goals.map((goal) => goal.collapsed).toList(),
         runRecords: _runRecords,
       );
 
@@ -308,6 +309,32 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
     }
   }
 
+  /// 접기·펼치기 상태를 바꾸고, 열린 파일이 있으면 그 파일의 접힘 표시도 바로 고친다.
+  /// 저장 버튼을 누르지 않고 앱을 닫았다 다시 열어도 사용자가 정한 상태가 유지된다.
+  /// 디스크의 제목·항목·카운터는 그대로 두고 접힘 표시만 바꾼다(저장 안 한 편집은 섞지 않음).
+  void _setCollapsed(GoalItem goal, bool collapsed) {
+    setState(() => goal.collapsed = collapsed);
+    final path = _currentFilePath;
+    if (path == null) return;
+    final screenItems = [
+      for (final it in _goals) (text: it.controller.text, collapsed: it.collapsed),
+    ];
+    () async {
+      try {
+        final file = File(path);
+        if (!await file.exists()) return;
+        final updated = ListFileService.applyFoldState(
+          await file.readAsString(),
+          kind: ListFileKind.goal,
+          screenItems: screenItems,
+        );
+        await file.writeAsString(updated, flush: true);
+      } on FileSystemException catch (error) {
+        debugPrint("끝장 리스트 접기 상태 저장 실패: $error");
+      }
+    }();
+  }
+
   // 2. 불러오기 기능 (파일 선택 후 앱에 반영)
   Future<void> _loadFromFile() async {
     final path = await _localPath;
@@ -330,8 +357,11 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
         _runRecords.clear();
         _runRecords.addAll(data.runRecords);
         if (data.title != null) _titleController.text = data.title!;
-        for (final goalText in data.items) {
-          _goals.add(GoalItem(text: goalText)..controller.text = goalText);
+        for (var i = 0; i < data.items.length; i++) {
+          final goalText = data.items[i];
+          _goals.add(GoalItem(text: goalText)
+            ..controller.text = goalText
+            ..collapsed = data.collapsed[i]);
         }
 
         if (_goals.isEmpty) _goals.add(GoalItem());
@@ -829,7 +859,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
             if (collapsed)
               // 접힌 상태: 첫 줄만 보이고, 누르면 펼쳐서 편집한다
               GestureDetector(
-                onTap: () => setState(() => goal.collapsed = false),
+                onTap: () => _setCollapsed(goal, false),
                 child: SizedBox(
                   width: double.infinity,
                   child: Text(
@@ -861,7 +891,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
               Tooltip(
                 message: goal.collapsed ? '펼치기' : '접기',
                 child: InkWell(
-                  onTap: () => setState(() => goal.collapsed = !goal.collapsed),
+                  onTap: () => _setCollapsed(goal, !goal.collapsed),
                   borderRadius: BorderRadius.circular(8),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -38,14 +38,22 @@ class ListFileData {
     required this.title,
     required this.items,
     required this.runRecords,
+    this.collapsed = const [],
   });
 
   final String? title;
   final List<String> items;
   final Map<String, int> runRecords;
+
+  /// 항목별 접힘 상태 (items와 같은 길이). 접힌 항목은 파일 블록에 [FOLDED] 줄이 있다.
+  final List<bool> collapsed;
 }
 
 class ListFileService {
+  /// 항목 블록 머리 바로 다음 줄에 두는 접힘 표시 (2026-11-21 사용자 지시:
+  /// 접기·펼치기 상태를 다시 열어도 그대로 유지)
+  static const foldedMarker = '[FOLDED]';
+
   /// 리스트 종류별 저장 폴더 (문서 폴더 아래 FlowSchedules / FlowAwareness)
   static Future<Directory> directoryFor(ListFileKind kind) async {
     final documents = await getApplicationDocumentsDirectory();
@@ -123,6 +131,7 @@ class ListFileService {
     required String title,
     required List<String> items,
     required Map<String, int> runRecords,
+    List<bool> collapsed = const [],
   }) {
     final content = StringBuffer()
       ..writeln('${kind.titleMarker}: $title')
@@ -134,8 +143,11 @@ class ListFileService {
       );
 
     for (var index = 0; index < items.length; index++) {
+      content.writeln('[${kind.itemMarker}:${index + 1}]');
+      if (index < collapsed.length && collapsed[index]) {
+        content.writeln(foldedMarker);
+      }
       content
-        ..writeln('[${kind.itemMarker}:${index + 1}]')
         ..writeln(items[index])
         ..writeln('[END_${kind.itemMarker}]');
     }
@@ -144,6 +156,8 @@ class ListFileService {
 
   static ListFileData parse(String content, {required ListFileKind kind}) {
     final items = <String>[];
+    final collapsed = <bool>[];
+    var markedFolded = false;
     final runRecords = <String, int>{};
     String? title;
     String? markedItem;
@@ -151,7 +165,10 @@ class ListFileService {
 
     void addLegacyItem() {
       final text = legacyItem.toString().trim();
-      if (text.isNotEmpty) items.add(text);
+      if (text.isNotEmpty) {
+        items.add(text);
+        collapsed.add(false);
+      }
       legacyItem.clear();
     }
 
@@ -160,10 +177,17 @@ class ListFileService {
       if (RegExp(r'^\[(GOAL|AWARE_ITEM):\d+\]$').hasMatch(trimmedLine)) {
         addLegacyItem();
         markedItem = '';
+        markedFolded = false;
       } else if (RegExp(r'^\[END_(GOAL|AWARE_ITEM)\]$').hasMatch(trimmedLine) &&
           markedItem != null) {
         items.add(markedItem.trim());
+        collapsed.add(markedFolded);
         markedItem = null;
+      } else if (markedItem != null &&
+          markedItem.isEmpty &&
+          !markedFolded &&
+          trimmedLine == foldedMarker) {
+        markedFolded = true;
       } else if (markedItem != null) {
         markedItem = markedItem.isEmpty ? line : '$markedItem\n$line';
       } else {
@@ -189,10 +213,48 @@ class ListFileService {
 
     if (markedItem != null) {
       items.add(markedItem.trim());
+      collapsed.add(markedFolded);
     } else {
       addLegacyItem();
     }
 
-    return ListFileData(title: title, items: items, runRecords: runRecords);
+    return ListFileData(
+      title: title,
+      items: items,
+      runRecords: runRecords,
+      collapsed: collapsed,
+    );
+  }
+
+  /// 파일 내용에서 접힘 표시만 바꾼다 (제목·항목·카운터는 디스크 내용 그대로).
+  /// 접기/펼치기를 누를 때 저장 버튼 없이 바로 기억하되, 저장하지 않은
+  /// 다른 편집이 파일에 섞이지 않게 하려는 것이다.
+  /// 같은 글의 항목은 화면 순서대로 짝짓고, 화면에 없는 항목은 그대로 둔다.
+  static String applyFoldState(
+    String content, {
+    required ListFileKind kind,
+    required List<({String text, bool collapsed})> screenItems,
+  }) {
+    final data = parse(content, kind: kind);
+    final used = List<bool>.filled(screenItems.length, false);
+    final collapsed = <bool>[];
+    for (var i = 0; i < data.items.length; i++) {
+      var folded = data.collapsed[i];
+      for (var j = 0; j < screenItems.length; j++) {
+        if (!used[j] && screenItems[j].text.trim() == data.items[i]) {
+          used[j] = true;
+          folded = screenItems[j].collapsed;
+          break;
+        }
+      }
+      collapsed.add(folded);
+    }
+    return serialize(
+      kind: kind,
+      title: data.title ?? '',
+      items: data.items,
+      runRecords: data.runRecords,
+      collapsed: collapsed,
+    );
   }
 }

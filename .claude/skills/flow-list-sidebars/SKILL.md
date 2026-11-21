@@ -116,7 +116,11 @@ final Function(String?) onLoadDirectoryChanged;
 - **순번 직접 변경**: 순번 `CircleAvatar`(radius 12, white24)를 `Tooltip('눌러서 순번 변경')`+`InkWell(CircleBorder)`로 감싼다. 누르면 그 자리가 폭 40 숫자 입력칸(`_numberController`/`_numberFocus`, `autofocus`, `digitsOnly`, 가운데 정렬, 글자 12, 채움 white24, 모서리 12, 테두리 끝장 blueAccent / 알아차림 orangeAccent)으로 바뀐다(`_numberEditIndex`).
   `_applyNumberEdit()`가 엔터(`onSubmitted`), 포커스 잃음(`_numberFocus` 리스너), **저장 버튼(`_saveToFile` 맨 앞)**에서 불린다: 입력값-1을 `0..길이-1`로 clamp해 `removeAt`/`insert`로 옮기고(나머지 순번은 자동으로 밀림), 숫자가 아니면 그대로 둔다. `_activeActionIndex = null`, `onGoalsChanged`/`onItemsChanged` 호출. `_clearAll`은 `_numberEditIndex = null`.
   `dispose()`에서 리스너를 먼저 떼고 focus/controller를 해제한다(해제 중 setState 방지).
-- **긴 항목 접기/펼치기**: 항목 클래스에 `bool collapsed = false`(화면 전용, 파일에 저장 안 함, main이 항목 객체를 보관하므로 사이드바를 닫았다 열어도 유지).
+- **긴 항목 접기/펼치기**: 항목 클래스에 `bool collapsed = false`. **파일에 저장한다** (2026-11-21 사용자 지시 "접거나 펼친 상태 그대로 유지", 원인: 예전엔 화면 전용이라 다시 불러오면 모두 펼쳐졌음).
+  - 파일 형식: 접힌 항목은 블록 머리 바로 다음 줄에 `[FOLDED]`(`ListFileService.foldedMarker`)를 둔다. 예: `[GOAL:1]` / `[FOLDED]` / 내용 / `[END_GOAL]`. 표시가 없으면 펼침(예전 파일 호환). `ListFileData.collapsed`(items와 같은 길이), `serialize(collapsed:)`.
+  - 저장 버튼: `collapsed: 리스트.map((x) => x.collapsed).toList()`. 불러오기: `..collapsed = data.collapsed[i]`.
+  - 접기/펼치기 버튼과 접힌 글 누르기는 `_setCollapsed(항목, 값)`을 부른다: setState 후 열린 파일(`_currentFilePath`)이 있으면 `ListFileService.applyFoldState(디스크 내용, kind:, screenItems: [(text:, collapsed:)])`로 **접힘 표시만** 바꿔 바로 쓴다(제목·항목·카운터는 디스크 그대로, 같은 글은 화면 순서대로 짝짓기, 화면에 없는 항목은 그대로). 그래서 저장 안 하고 앱을 꺼도 유지되고, 저장 안 한 편집은 파일에 섞이지 않는다.
+  - 앱 실행 중에는 main이 항목 객체를 보관하므로 사이드바를 닫았다 열어도 유지.
   `_buildItemText`는 `LayoutBuilder`+`TextPainter(maxLines: 1, 글자 14 흰색)`로 **한 줄을 넘는 항목에만** 박스 내용 하단 가운데에 버튼을 보인다: 펼쳐진 상태 `Icons.keyboard_arrow_up`(^, 툴팁 `접기`), 접힌 상태 `Icons.keyboard_arrow_down`(v, 툴팁 `펼치기`), 크기 18, white54, 좌우 패딩 16.
   접힌 상태는 줄바꿈을 공백으로 바꾼 첫 줄 `Text(maxLines 1, ellipsis)`만 보이고, 글을 누르면 펼쳐진다. 입력 중(`onChanged`)에는 `setState`로 다시 그려 한 줄을 넘는 순간 버튼이 나타난다.
 
@@ -131,6 +135,6 @@ final Function(String?) onLoadDirectoryChanged;
 
 ## 7. 테스트 (반드시 통과)
 
-- `test/list_file_service_test.dart`: 종류별 왕복, 폴더·카운터 줄 분리, 다른 리스트 카운터 무시, 예전 번호 형식 읽기, `pickerInitialDirectory` 정규화, `saveTargetPath`(같은 제목 덮어쓰기·다른 제목 새 파일·번호 붙이기·번호 붙은 파일 인정·특수문자·실제 파일 유지).
+- `test/list_file_service_test.dart`: 종류별 왕복, 접힘 `[FOLDED]` 왕복·`applyFoldState`(디스크 제목/항목/카운터 유지)·예전 파일은 펼침, 폴더·카운터 줄 분리, 다른 리스트 카운터 무시, 예전 번호 형식 읽기, `pickerInitialDirectory` 정규화, `saveTargetPath`(같은 제목 덮어쓰기·다른 제목 새 파일·번호 붙이기·번호 붙은 파일 인정·특수문자·실제 파일 유지).
 - `test/run_counter_service_test.dart`: 줄 생성/읽기, 일반 줄 무시, 접두어가 다른 줄 무시, `todayKey`.
 - `test/goal_list_sidebar_test.dart`: 알아차림 사이드바는 전달받은 카운터만 바꾼다, 오늘 실행 표시와 화살표, 360/768/1280 폭에서 예외 없음, 순번 입력+엔터로 이동·범위 밖 번호는 맨 뒤, 긴 항목에만 접기/펼치기 버튼(두 리스트).
