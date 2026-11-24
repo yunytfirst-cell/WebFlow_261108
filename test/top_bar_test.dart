@@ -1,4 +1,5 @@
 import 'package:flow/models/design_theme.dart';
+import 'package:flow/widgets/daily_schedule_box.dart';
 import 'package:flow/widgets/goal_title_display.dart';
 import 'package:flow/widgets/top_bar.dart';
 import 'package:flow/widgets/top_bar_ticker.dart';
@@ -72,6 +73,57 @@ void main() {
     await tester.tap(find.byTooltip('컨트롤 펼치기'));
     await tester.pump();
     expect(daily, findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  // 2026-11-24: Daily 스케줄 표시바도 −버튼 왼쪽 끝 ~ 설정 오른쪽 끝, 현재 시간은 왼쪽 끝
+  testWidgets('Daily 스케줄 표시바 정렬과 현재 시간 위치', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TopBar(
+            selectedSubGoal: '',
+            sidebarGoals: const [],
+            scrollController: controller,
+            maxWidth: 1280,
+            maxHeight: 800,
+            onClose: () {},
+            onToggleDisplayMode: () {},
+            currentModeName: 'focus',
+            theme: AppThemeData.getTheme(AppThemeMode.values.first),
+            currentTime: DateTime(2026, 11, 24, 9, 5),
+            showDailyScheduleBox: true,
+            dailySchedule: List.filled(27, '운동'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final box = find.byType(DailyScheduleBox);
+    expect(
+      tester.getTopLeft(box).dx,
+      moreOrLessEquals(
+        tester.getTopLeft(find.byTooltip('컨트롤 접기')).dx,
+        epsilon: 1,
+      ),
+    );
+    expect(
+      tester.getTopRight(box).dx,
+      moreOrLessEquals(tester.getTopRight(find.byTooltip('설정')).dx, epsilon: 1),
+    );
+    final timeX = tester.getTopLeft(find.text('09:05')).dx;
+    expect(
+      timeX,
+      lessThan(tester.getTopLeft(find.byIcon(Icons.schedule_rounded)).dx),
+    );
     expect(tester.takeException(), isNull);
   });
 }

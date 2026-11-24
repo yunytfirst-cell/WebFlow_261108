@@ -63,57 +63,7 @@ class DailyScheduleBox extends StatelessWidget {
               height: 64,
               child: Row(
                 children: [
-                  // 스케줄 아이콘 & 스케줄 클릭 영역
-                  Expanded(
-                    child: InkWell(
-                      onTap: onOpenEditor,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.schedule_rounded,
-                              size: 22,
-                              color: theme.textColor.withValues(alpha: 0.95),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: theme.accentColor.withValues(alpha: 0.35),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                timeSlotLabel,
-                                style: TextStyle(
-                                  color: theme.textColor,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                scheduleText,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: theme.textColor,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-
-                  // 리얼 현재 시간 표시 (우측)
+                  // 리얼 현재 시간 표시 (2026-11-24 사용자 지시: 오른쪽 → 왼쪽 끝)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
@@ -144,6 +94,56 @@ class DailyScheduleBox extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
+
+                  // 스케줄 아이콘 & 스케줄 클릭 영역
+                  Expanded(
+                    child: InkWell(
+                      onTap: onOpenEditor,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              size: 22,
+                              color: theme.textColor.withValues(alpha: 0.95),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: theme.accentColor.withValues(alpha: 0.35),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                timeSlotLabel,
+                                style: TextStyle(
+                                  color: theme.textColor,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                                      Expanded(
+                              child: Text(
+                                scheduleText,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: theme.textColor,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(width: 6),
 
                   // 닫기 (X) 버튼

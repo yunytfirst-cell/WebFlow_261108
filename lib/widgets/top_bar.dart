@@ -248,22 +248,19 @@ class _TopBarState extends State<TopBar> {
             children: [
               // 0. Daily Schedule 표시 영역 (아이콘 행과 targetWidth 동일하게 맞춤)
               if (widget.showDailyScheduleBox)
+                // 2026-11-24 사용자 지시: Daily 스케줄 표시바도 −/+ 버튼 왼쪽 끝 ~ 설정 아이콘 오른쪽 끝에 맞춘다
+                // (아이콘 행을 잰 _barLeft/_barWidth, 재기 전 첫 프레임은 예전처럼 targetWidth 가운데)
                 Positioned(
                   top: TopBar.topGap + 24,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: SizedBox(
-                      width: targetWidth,
-                      child: DailyScheduleBox(
-                        schedule24h: widget.dailySchedule,
-                        currentTime: widget.currentTime,
-                        theme: widget.theme,
-                        onClose: widget.onCloseDailyScheduleBox ?? () {},
-                        onOpenEditor: widget.onOpenDailyScheduleEditor,
-                        width: targetWidth,
-                      ),
-                    ),
+                  left: _barLeft ?? (totalAreaWidth - targetWidth) / 2,
+                  width: _barWidth ?? targetWidth,
+                  child: DailyScheduleBox(
+                    schedule24h: widget.dailySchedule,
+                    currentTime: widget.currentTime,
+                    theme: widget.theme,
+                    onClose: widget.onCloseDailyScheduleBox ?? () {},
+                    onOpenEditor: widget.onOpenDailyScheduleEditor,
+                    width: _barWidth ?? targetWidth,
                   ),
                 ),
 
