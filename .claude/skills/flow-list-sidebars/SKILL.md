@@ -98,7 +98,9 @@ final Function(String?) onLoadDirectoryChanged;
   - `serialize`: 제목 줄 → 카운터 줄들(날짜순, 0회 제외) → 항목 블록들.
   - `parse(content, kind:)`: 항목 블록과 예전 형식(`1. 항목`)을 모두 읽는다. 제목 줄은 `[PJT]`, `[AWARE]` 둘 다 인정한다. 자기 `runLinePrefix` 카운터 줄만 기록하고, 다른 리스트의 카운터 줄(`RunCounterService.isRunLine`)은 버린다(항목 텍스트로도 넣지 않음).
 - `reference/run_counter_service.dart`: `defaultLinePrefix = '[RUN] '`, `maxCount = 99`, 줄 정규식 `^(\[[A-Z_]+\] )(\d{4}-\d{2}-\d{2}): (\d+)\s*$`, `todayKey`(yyyy-MM-dd), `isRunLine`, `parseLine(line, linePrefix:)`, `toLines(records, linePrefix:)`, `total`.
-- `reference/run_counter_panel.dart`: "오늘 실행" 숫자(amberAccent, 26/30) + 위/아래 화살표(툴팁 `오늘 실행 횟수 늘리기`/`줄이기`, 0~99), "누적 N" 배지. 폭 320 미만이면 세로 배치. 전달받은 Map만 수정한다.
+- `reference/run_counter_panel.dart` (2026-11-24 사용자 지시 "오늘 실행 숫자 옆 위/아래 화살표 삭제, 누적 박스 오른쪽에 배치, 박스 높이 반으로"): **한 줄** `오늘 실행`(white70 13) → 숫자(amberAccent 22, height 1.1) → `누적 N` 배지(글자 13/17, 패딩 가로 8 세로 2, 모서리 8) → ↑(amberAccent, 툴팁 `오늘 실행 횟수 늘리기`) ↓(white54, `줄이기`). 화살표는 숫자 옆에 두지 않는다(다시 세로로 쌓지 않는다). 0~99.
+  - 화살표는 `IconButton`이 아니라 `Tooltip`+`InkWell(CircleBorder)`+`SizedBox(36×36)`+아이콘 22. 이유: IconButton은 최소 터치 크기 48로 늘어나 박스가 56이 됐다.
+  - 바깥 박스 패딩 가로 10 세로 6, 모서리 10 → 높이 50(예전 110). Row는 `FittedBox(scaleDown)`로 감싸 폭이 좁으면 통째로 줄인다(예전의 폭 320 미만 세로 배치는 없앴다. margin만 320 미만 4 / 이상 20). 전달받은 Map만 수정한다.
 
 처음부터 만들 때는 이 세 파일을 사본 그대로 쓴다.
 
@@ -147,6 +149,6 @@ final Function(String?) onLoadDirectoryChanged;
 - `test/list_file_service_test.dart`: 종류별 왕복, 접힘 `[FOLDED]` 왕복·`applyFoldState`(디스크 제목/항목/카운터 유지)·예전 파일은 펼침, 폴더·카운터 줄 분리, 다른 리스트 카운터 무시, 예전 번호 형식 읽기, `pickerInitialDirectory` 정규화, `saveTargetPath`(같은 제목 덮어쓰기·다른 제목 새 파일·번호 붙이기·번호 붙은 파일 인정·특수문자·실제 파일 유지).
 - `test/run_counter_service_test.dart`: 줄 생성/읽기, 일반 줄 무시, 접두어가 다른 줄 무시, `todayKey`.
 - `test/fold_persist_test.dart`: 저장 없이 접기/펼치기 → 다른 파일 → 다시 열기 상태 유지(두 리스트, 실제 파일).
-- `test/goal_list_sidebar_test.dart`: 알아차림 사이드바는 전달받은 카운터만 바꾼다, 오늘 실행 표시와 화살표, 360/768/1280 폭에서 예외 없음, 순번 입력+엔터로 이동·범위 밖 번호는 맨 뒤, 긴 항목에만 접기/펼치기 버튼(두 리스트), 도구 줄(more_vert 없음·↑ 접기 왼쪽·+ 오른쪽·버튼 동작, 🎯는 끝장만), 접기 박스(24×20)는 모든 항목에 있고 방향 아이콘(크기 18 — 실행 카운터 화살표와 구분)은 긴 항목에만.
+- `test/goal_list_sidebar_test.dart`: 알아차림 사이드바는 전달받은 카운터만 바꾼다, 오늘 실행 표시와 화살표, 360/768/1280 폭에서 예외 없음, 순번 입력+엔터로 이동·범위 밖 번호는 맨 뒤, 긴 항목에만 접기/펼치기 버튼(두 리스트), 도구 줄(more_vert 없음·↑ 접기 왼쪽·+ 오른쪽·버튼 동작, 🎯는 끝장만), 접기 박스(24×20)는 모든 항목에 있고 방향 아이콘(크기 18 — 실행 카운터 화살표와 구분)은 긴 항목에만, 실행 카운터 화살표가 누적 오른쪽·↓가 ↑ 오른쪽·패널 높이 56 미만(두 리스트).
 - 테스트 추가 요령(2026-11-24): Dart 문자열의 `
 `이 든 코드를 bash heredoc 안 python으로 끼워 넣으면 실제 줄바꿈이 되어 파싱 오류가 난다. 그런 코드는 Edit 도구로 넣는다. 접기 아이콘은 실행 카운터 화살표(크기 20)와 같은 아이콘이므로 찾을 때 `size == 18`로 구분한다.

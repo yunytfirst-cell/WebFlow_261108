@@ -1,5 +1,6 @@
 import 'package:flow/widgets/awareness_list_sidebar.dart';
 import 'package:flow/widgets/goal_list_sidebar.dart';
+import 'package:flow/widgets/run_counter_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -269,6 +270,28 @@ void main() {
     );
     expect(boxes(), findsNWidgets(2));
     expect(arrows(), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  // 2026-11-24: 화살표는 누적 박스 오른쪽, 오늘 실행 박스 높이는 예전(약 100)의 절반 (두 리스트)
+  testWidgets('두 리스트: 실행 카운터 화살표는 누적 오른쪽, 박스는 낮다', (tester) async {
+    setWide(tester);
+    for (final sidebar in [
+      goalSidebar([GoalItem()]),
+      awarenessSidebar([AwarenessItem()]),
+    ]) {
+      await tester.pumpWidget(sidebar);
+      final totalX = tester.getTopRight(find.textContaining('누적')).dx;
+      expect(
+        tester.getCenter(find.byTooltip('오늘 실행 횟수 늘리기')).dx,
+        greaterThan(totalX),
+      );
+      expect(
+        tester.getCenter(find.byTooltip('오늘 실행 횟수 줄이기')).dx,
+        greaterThan(tester.getCenter(find.byTooltip('오늘 실행 횟수 늘리기')).dx),
+      );
+      expect(tester.getSize(find.byType(RunCounterPanel)).height, lessThan(56));
+    }
     expect(tester.takeException(), isNull);
   });
 }
