@@ -78,6 +78,31 @@ class _TopBarState extends State<TopBar> {
   // 2026-11-24 사용자 지시: 상단 컨트롤 아이콘은 예전 크기의 2/3, 모드·테마 사이 간격은 예전(30)의 2배 이상
   static const double _iconScale = 2 / 3;
   static const double _modeThemeGap = 70.0;
+
+  // 2026-11-24 사용자 지시: 목표 제목·티커(목표바)의 시작은 "−/+" 버튼 왼쪽 끝, 끝은 설정 아이콘 오른쪽 끝에 맞춘다.
+  // 아이콘 행은 FittedBox로 줄어들 수 있어 계산 대신 그린 뒤 실제 위치를 잰다(펼친 상태일 때만 갱신).
+  final GlobalKey _stackKey = GlobalKey();
+  final GlobalKey _iconsRowKey = GlobalKey();
+  double? _barLeft;
+  double? _barWidth;
+
+  void _measureIconsRow() {
+    if (!mounted || !_controlsExpanded) return;
+    final stackBox = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    final rowBox = _iconsRowKey.currentContext?.findRenderObject() as RenderBox?;
+    if (stackBox == null || rowBox == null || !rowBox.hasSize) return;
+    final left = rowBox.localToGlobal(Offset.zero, ancestor: stackBox).dx;
+    final right = rowBox.localToGlobal(Offset(rowBox.size.width, 0), ancestor: stackBox).dx;
+    final width = right - left;
+    if (_barLeft == null ||
+        (left - _barLeft!).abs() > 0.5 ||
+        (width - _barWidth!).abs() > 0.5) {
+      setState(() {
+        _barLeft = left;
+        _barWidth = width;
+      });
+    }
+  }
   bool _showInitialMessage = true;
   List<Map<String, dynamic>>? _cachedFlattenedLines;
 
@@ -91,7 +116,10 @@ class _TopBarState extends State<TopBar> {
     final double containerHeight = (widget.maxHeight * 0.2).clamp(minBarHeight, maxBarHeight).floorToDouble();
     final double containerWidth = (widget.maxWidth - 40).clamp(200.0, 800.0).floorToDouble();
     double refSize = containerWidth < containerHeight ? containerWidth : containerHeight;
-    return refSize * 0.55 * _tickerFontSizeRatio;
+    final double base = refSize * 0.55 * _tickerFontSizeRatio;
+    // 2026-11-24 사용자 지시 "목표바 안의 글자도 오토레이아웃": 목표바 폭이 좁으면 글자도 줄인다(최소 11).
+    if (_barWidth == null) return base;
+    return (_barWidth! * 0.045).clamp(11.0, base);
   }
 
   double _getTickerBarHeight() => _getTickerFontSize() * _tickerBarHeightRatio;
@@ -183,7 +211,9 @@ class _TopBarState extends State<TopBar> {
   Widget build(BuildContext context) {
     final double containerHeight = widget.preferredSize.height;
     final double containerWidth = (widget.maxWidth - 40).clamp(200.0, 800.0).floorToDouble();
-    final double tickerWidth = (widget.maxWidth - 120).clamp(180.0, 700.0).floorToDouble();
+    // 목표바 폭·시작 위치: 아이콘 행을 잰 값(없으면 예전처럼 가운데 고정 폭)
+    final double tickerWidth = _barWidth ?? (widget.maxWidth - 120).clamp(180.0, 700.0).floorToDouble();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureIconsRow());
     final double totalAreaWidth = widget.maxWidth;
     double refSize = containerWidth < containerHeight ? containerWidth : containerHeight;
 
@@ -214,6 +244,7 @@ class _TopBarState extends State<TopBar> {
           width: totalAreaWidth,
           height: containerHeight,
           child: Stack(
+            key: _stackKey,
             children: [
               // 0. Daily Schedule 표시 영역 (아이콘 행과 targetWidth 동일하게 맞춤)
               if (widget.showDailyScheduleBox)
@@ -250,6 +281,7 @@ class _TopBarState extends State<TopBar> {
                       // 접으면 + 버튼만 남으므로 왼쪽에 붙인다
                       alignment: _controlsExpanded ? Alignment.center : Alignment.centerLeft,
                       child: Row(
+                        key: _iconsRowKey,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
@@ -353,26 +385,21 @@ class _TopBarState extends State<TopBar> {
               // 2. [별도 파일 관리] 상단 1층: 목표 제목 표시 영역
               Positioned(
                 bottom: _getTickerBarHeight() + 10,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: SizedBox(
-                    width: tickerWidth,
-                    child: GoalTitleDisplay(
-                      title: widget.sidebarTitle,
-                      fontSize: tickerFontSize,
-                      theme: widget.theme,
-                      width: tickerWidth,
-                    ),
-                  ),
+                left: _barLeft ?? (totalAreaWidth - tickerWidth) / 2,
+                width: tickerWidth,
+                child: GoalTitleDisplay(
+                  title: widget.sidebarTitle,
+                  fontSize: tickerFontSize,
+                  theme: widget.theme,
+                  width: tickerWidth,
                 ),
               ),
 
               // 3. [완전 고정] 상단 2층: 티커
               Positioned(
                 bottom: 2,
-                left: 0,
-                right: 0,
+                left: _barLeft ?? (totalAreaWidth - tickerWidth) / 2,
+                width: tickerWidth,
                 child: Container(
                   height: _getTickerBarHeight(),
                   alignment: Alignment.center,
@@ -393,7 +420,8 @@ class _TopBarState extends State<TopBar> {
                       setState(() => _currIndex = newIdx);
                       _scrollToIndex();
                     },
-                    maxWidth: widget.maxWidth,
+                    // 폭은 columnWidth(아이콘 행에 맞춘 값)를 그대로 쓴다
+                    maxWidth: null,
                   ),
                 ),
               ),

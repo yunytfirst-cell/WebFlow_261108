@@ -1,5 +1,7 @@
 import 'package:flow/models/design_theme.dart';
+import 'package:flow/widgets/goal_title_display.dart';
 import 'package:flow/widgets/top_bar.dart';
+import 'package:flow/widgets/top_bar_ticker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -44,6 +46,23 @@ void main() {
     );
     expect(theme, findsOneWidget);
 
+    // 목표바(티커·목표 제목)는 −/+ 버튼 왼쪽 끝 ~ 설정 아이콘 오른쪽 끝에 맞춘다
+    await tester.pump();
+    final toggleLeft = tester.getTopLeft(find.byTooltip('컨트롤 접기')).dx;
+    final settingsRight = tester.getTopRight(find.byTooltip('설정')).dx;
+    for (final bar in [
+      find.byType(TopBarTicker),
+      find.byType(GoalTitleDisplay),
+    ]) {
+      expect(
+        tester.getTopLeft(bar).dx,
+        moreOrLessEquals(toggleLeft, epsilon: 1),
+      );
+      expect(
+        tester.getTopRight(bar).dx,
+        moreOrLessEquals(settingsRight, epsilon: 1),
+      );
+    }
     await tester.tap(find.byTooltip('컨트롤 접기'));
     await tester.pump();
     expect(daily, findsNothing);
