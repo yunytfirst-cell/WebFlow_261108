@@ -111,14 +111,7 @@ class DailyScheduleBox extends StatelessWidget {
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(
-                                      Icons.schedule_rounded,
-                                      size: 22,
-                                      color: theme.textColor.withValues(
-                                        alpha: 0.95,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
+                                    // 2026-11-24 사용자 지시: 시간 칸 오른쪽 스케줄 아이콘 제거
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,

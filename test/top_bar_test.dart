@@ -126,6 +126,7 @@ void main() {
     final timeX = tester.getTopLeft(find.text('09:05')).dx;
     // 시계 아이콘·감싸는 박스 없음, 색 칸은 박스 왼쪽 끝에서 시작
     expect(find.byIcon(Icons.access_time_filled), findsNothing);
+    expect(find.byIcon(Icons.schedule_rounded), findsNothing);
     final timeCell = find.ancestor(
       of: find.text('09:05'),
       matching: find.byWidgetPredicate(
@@ -140,10 +141,7 @@ void main() {
       tester.getTopRight(timeCell.first).dx,
       greaterThan(tester.getTopRight(find.text('09:05')).dx),
     );
-    expect(
-      timeX,
-      lessThan(tester.getTopLeft(find.byIcon(Icons.schedule_rounded)).dx),
-    );
+    expect(timeX, lessThan(tester.getTopLeft(find.text('운동')).dx));
     expect(tester.takeException(), isNull);
   });
 }
