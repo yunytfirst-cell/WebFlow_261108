@@ -64,6 +64,22 @@ void main() {
         moreOrLessEquals(settingsRight, epsilon: 1),
       );
     }
+    // 목표 표시바와 ITEM FINISH(티커) 바는 크기·글자 크기·글자 시작 위치가 같다
+    final titleSize = tester.getSize(find.byType(GoalTitleDisplay));
+    final tickerSize = tester.getSize(find.byType(TopBarTicker));
+    expect(titleSize.width, moreOrLessEquals(tickerSize.width, epsilon: 0.5));
+    expect(titleSize.height, moreOrLessEquals(tickerSize.height, epsilon: 0.5));
+    final goalLabel = tester.widget<Text>(find.text('목표: '));
+    final finish = tester.widget<Text>(find.text('ITEM FINISH'));
+    expect(goalLabel.style!.fontSize, finish.style!.fontSize);
+    expect(
+      tester.getTopLeft(find.text('목표: ')).dx,
+      moreOrLessEquals(
+        tester.getTopLeft(find.text('ITEM FINISH')).dx,
+        epsilon: 0.5,
+      ),
+    );
+
     // 접어도 + 버튼은 − 버튼이 있던 자리·크기 그대로 (2026-11-24 사용자 지적)
     final toggleRect = tester.getRect(find.byTooltip('컨트롤 접기'));
     await tester.tap(find.byTooltip('컨트롤 접기'));

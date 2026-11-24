@@ -37,6 +37,12 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 - "목표바 안의 글자도 오토레이아웃": `_getTickerFontSize()` = 예전 값(base)과 `_barWidth * 0.045` 중 작은 값(최소 11). 티커 줄 높이(`_getTickerBarHeight`)도 같은 함수를 쓰므로 함께 줄어든다.
 - 테스트: `test/top_bar_test.dart`가 티커·목표 제목·Daily 박스의 좌우 끝이 −버튼 왼쪽·설정 오른쪽과 1 이내로 같은지 검사한다. Daily 박스는 현재 시간이 스케줄 아이콘보다 왼쪽, 시계·스케줄 아이콘 없음, 색 칸이 박스 왼쪽 끝에서 시작해 시간 글자 끝을 지나는지도 본다.
 
+## 목표 표시바 = ITEM FINISH 바 (2026-11-24 사용자 지시 "목표 표시바, item finish 바의 사이즈·위치·글자크기 동일")
+
+- `GoalTitleDisplay`: 높이 `fontSize * 1.5`(티커 줄 높이와 같음), 패딩 없음, Row `start`·`max`, `목표: `·입력 글·힌트 모두 `fontSize`(예전 0.9/0.85 배율 없앰), 굵게.
+- `TopBarTicker` 글 영역 Container `alignment: centerLeft`(예전 center라 짧은 `ITEM FINISH`가 가운데에 있었음).
+- 두 바 모두 `left: _barLeft, width: _barWidth`, 같은 `tickerFontSize`. 테스트가 크기·글자 크기·글자 시작 x(`목표: ` vs `ITEM FINISH`)가 같은지 본다.
+
 ## 주의
 
 - `dart format`은 **바꾼 파일만** 지정한다. `lib/widgets/*.dart`처럼 한꺼번에 돌리면 손대지 않은 14개 파일이 바뀌어 analyze 경고가 늘어난다(2026-11-24 실수, `git checkout`으로 되돌림).

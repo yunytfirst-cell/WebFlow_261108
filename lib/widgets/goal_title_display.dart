@@ -55,8 +55,11 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
       width: targetWidth,
       child: Container(
         width: targetWidth,
-        height: widget.fontSize * 1.8,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        // 2026-11-24 사용자 지시: 아래 ITEM FINISH(티커) 바와 크기·위치·글자 크기를 같게 한다.
+        // 티커와 같은 높이(글자 1.5배), 좌우 여백 없이 왼쪽부터 시작한다.
+        height: viewportHeight,
+        padding: EdgeInsets.zero,
+
         // decoration: BoxDecoration(
         //   color: widget.theme.backgroundColor.withValues(alpha: 0.25),
         //   borderRadius: BorderRadius.circular(10),
@@ -66,15 +69,14 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
         //   ),
         // ),
         // alignment: Alignment.center,
-
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max,
           children: [
             Text(
               "목표: ",
               style: TextStyle(
-                fontSize: widget.fontSize * 0.9,
+                fontSize: widget.fontSize,
                 fontWeight: FontWeight.bold,
                 color: widget.theme.accentColor,
               ),
@@ -87,14 +89,14 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
                 },
                 textAlign: TextAlign.left,
                 style: TextStyle(
-                  fontSize: widget.fontSize * 0.9,
+                  fontSize: widget.fontSize,
                   fontWeight: FontWeight.bold,
                   color: widget.theme.textColor,
                 ),
                 decoration: InputDecoration(
                   hintText: "오늘의 스케줄 입력...",
                   hintStyle: TextStyle(
-                    fontSize: widget.fontSize * 0.85,
+                    fontSize: widget.fontSize,
                     color: widget.theme.textColor.withValues(alpha: 0.4),
                   ),
                   border: InputBorder.none,

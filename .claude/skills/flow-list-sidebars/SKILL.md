@@ -17,7 +17,7 @@ description: Flow 앱의 "성공의 열쇠(끝장 리스트, GoalListSidebar)"�
    flutter analyze lib test
    flutter test
    ```
-   기존 경고(main.dart의 `curly_braces_in_flow_control_structures`, goal_title_display.dart의 `viewportHeight`)만 남아야 한다.
+   기존 경고(main.dart의 `curly_braces_in_flow_control_structures`)만 남아야 한다(8개. goal_title_display.dart의 `viewportHeight` 경고는 2026-11-24에 없어짐).
 4. **저장**: 규칙·규격이 바뀌었으면 이 문서를 갱신하고, `reference/` 사본을 lib의 현재 파일로 다시 복사한다.
    ```
    cp lib/services/list_file_service.dart lib/services/run_counter_service.dart lib/widgets/run_counter_panel.dart .claude/skills/flow-list-sidebars/reference/

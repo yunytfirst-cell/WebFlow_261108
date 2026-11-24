@@ -52,7 +52,8 @@ class _TopBarTickerState extends State<TopBarTicker> {
         Container(
           height: viewportHeight,
           width: tickerWidth,
-          alignment: Alignment.center,
+          // 2026-11-24 사용자 지시: 위 목표 표시바와 글자 시작 위치를 같게(왼쪽부터)
+          alignment: Alignment.centerLeft,
           padding: EdgeInsets.only(
             right: (!widget.showInitialMessage) ? controlButtonsWidth : 0,
           ),

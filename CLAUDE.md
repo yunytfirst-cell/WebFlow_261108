@@ -8,7 +8,7 @@
 
 ## 작업이 끝나면 (묻지 말고 이 순서로)
 
-1. `flutter analyze lib test` / `flutter test` 통과 (기존 경고 9개만 남아야 함)
+1. `flutter analyze lib test` / `flutter test` 통과 (기존 경고 8개만 남아야 함 — main.dart curly_braces 8개. 2026-11-24 goal_title_display viewportHeight 경고 해소)
 2. 관련 SKILL.md 갱신 (규격이 바뀌었으면 reference 사본도)
 3. 앱 코드가 바뀌었으면 버전 올리기: `pubspec.yaml`·`lib/app_version.dart`·`CHANGELOG.md` (`flow-versioning`)
 4. 커밋 → 현재 작업 브랜치와 버전 태그(vX.Y.Z)를 `origin`(GitHub `yunytfirst-cell/WebFlow_261108`)에 push. main에 직접 push·병합은 먼저 확인.
