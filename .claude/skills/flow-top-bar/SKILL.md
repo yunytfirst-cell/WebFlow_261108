@@ -12,7 +12,9 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 - **위쪽 여백** `TopBar.topGap = 24` (2026-11-24 사용자 지적 "컨트롤 바 위쪽 높이 간격 20~30 줄 것, 시각적으로 불편"; 원인: 아이콘 행이 top 2로 창 위 끝에 붙어 있었음). `preferredSize`에 더하고, 아이콘 행 top·Daily 스케줄 박스 top(24 → topGap+24)에도 더한다. **main.dart 본문 시작 SizedBox 높이에도 `TopBar.topGap`을 더한다**(안 그러면 본문과 겹침).
 
 0. (`showDailyScheduleBox`일 때) Daily 스케줄 박스: top `topGap + 24`, **`left: _barLeft`, `width: _barWidth`** (2026-11-24 사용자 지시: −/+ 버튼 왼쪽 끝 ~ 설정 아이콘 오른쪽 끝, 목표바와 같은 잰 값). 재기 전 첫 프레임만 예전처럼 `targetWidth` 가운데.
-   - `DailyScheduleBox`(`lib/widgets/daily_schedule_box.dart`) 안 순서 (2026-11-24 사용자 지시 "현재시간 표시를 왼쪽 끝으로"): **현재 시간(HH:mm, 시계 아이콘)** → 8 → `Expanded`(스케줄 아이콘·시간대 라벨·스케줄 글, 누르면 편집) → 6 → 닫기(X).
+   - `DailyScheduleBox`(`lib/widgets/daily_schedule_box.dart`) 구조 (2026-11-24 사용자 지시 "현재시간을 왼쪽 끝으로" → "시간 앞 아이콘·감싸는 박스 제거, 박스 왼쪽 끝~시간 끝까지 컬러로 표시"): 바깥 Container(높이 76, 패딩 없음, `clipBehavior: antiAlias`, 배경 primary 0.35·모서리 14·그림자는 decoration, **테두리는 `foregroundDecoration`** — 색 칸이 테두리를 덮지 않게) → `Row(stretch)[ 시간 색 칸, Expanded(Padding(10/6, 예전 FittedBox 내용)) ]`.
+     - 시간 색 칸: `Container(color: accentColor 0.6, 가로 패딩 12, 가운데)` 안에 `FittedBox(Text HH:mm, 20, w900, tabularFigures)`. 시계 아이콘·검은 둥근 박스는 **없다**.
+     - 오른쪽 내용: 스케줄 아이콘·시간대 라벨·스케줄 글(누르면 편집) → 6 → 닫기(X). 기준 폭 최소 220(`referenceWidth`).
 1. 컨트롤 아이콘 행: top `buttonRowTop = topGap + (박스 있으면 112, 없으면 2)`.
 2. 목표 제목 `GoalTitleDisplay`: bottom `티커 높이 + 10`.
 3. 티커 `TopBarTicker`: bottom 2.
@@ -33,7 +35,7 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 - "−/+ 버튼 앞쪽과 목표바 시작 위치를 정렬, 끝은 설정 아이콘 끝에 맞춤": 아이콘 행 바깥 Row에 `_iconsRowKey`, Stack에 `_stackKey`. build마다 `addPostFrameCallback(_measureIconsRow)`로 Row의 왼쪽·오른쪽 끝을 `localToGlobal(…, ancestor: stackBox)`로 잰다(FittedBox 축소가 반영됨). 0.5 넘게 바뀌었을 때만 setState(무한 루프 방지). 접힌 상태에서도 숨긴 버튼이 자리를 차지하므로 값이 같다.
 - `GoalTitleDisplay`와 `TopBarTicker`의 `Positioned`는 `left: _barLeft, width: _barWidth`(잰 값이 없을 때 첫 프레임은 예전처럼 `(maxWidth-120).clamp(180,700)` 가운데). 티커에는 `columnWidth: tickerWidth`, `maxWidth: null`을 넘긴다(maxWidth를 넘기면 티커가 자기 폭을 따로 계산해 어긋남).
 - "목표바 안의 글자도 오토레이아웃": `_getTickerFontSize()` = 예전 값(base)과 `_barWidth * 0.045` 중 작은 값(최소 11). 티커 줄 높이(`_getTickerBarHeight`)도 같은 함수를 쓰므로 함께 줄어든다.
-- 테스트: `test/top_bar_test.dart`가 티커·목표 제목·Daily 박스의 좌우 끝이 −버튼 왼쪽·설정 오른쪽과 1 이내로 같은지 검사한다. Daily 박스는 현재 시간 글자가 스케줄 아이콘보다 왼쪽인지도 본다.
+- 테스트: `test/top_bar_test.dart`가 티커·목표 제목·Daily 박스의 좌우 끝이 −버튼 왼쪽·설정 오른쪽과 1 이내로 같은지 검사한다. Daily 박스는 현재 시간이 스케줄 아이콘보다 왼쪽, 시계 아이콘 없음, 색 칸이 박스 왼쪽 끝에서 시작해 시간 글자 끝을 지나는지도 본다.
 
 ## 주의
 

@@ -124,6 +124,22 @@ void main() {
       moreOrLessEquals(tester.getTopRight(find.byTooltip('설정')).dx, epsilon: 1),
     );
     final timeX = tester.getTopLeft(find.text('09:05')).dx;
+    // 시계 아이콘·감싸는 박스 없음, 색 칸은 박스 왼쪽 끝에서 시작
+    expect(find.byIcon(Icons.access_time_filled), findsNothing);
+    final timeCell = find.ancestor(
+      of: find.text('09:05'),
+      matching: find.byWidgetPredicate(
+        (w) => w is Container && w.color != null,
+      ),
+    );
+    expect(
+      tester.getTopLeft(timeCell.first).dx,
+      moreOrLessEquals(tester.getTopLeft(box).dx, epsilon: 0.5),
+    );
+    expect(
+      tester.getTopRight(timeCell.first).dx,
+      greaterThan(tester.getTopRight(find.text('09:05')).dx),
+    );
     expect(
       timeX,
       lessThan(tester.getTopLeft(find.byIcon(Icons.schedule_rounded)).dx),
