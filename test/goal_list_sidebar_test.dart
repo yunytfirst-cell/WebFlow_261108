@@ -209,4 +209,36 @@ void main() {
     expect(find.byTooltip('펼치기'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  // 2026-11-24: 오른쪽 +,-,… 묶음 대신 접기/펼치기 버튼 좌우에 바로 보이는 버튼 (두 리스트)
+  testWidgets('두 리스트: 항목 버튼이 접기 버튼 좌우에 항상 보이고 more 버튼은 없다', (tester) async {
+    setWide(tester);
+    final goals = [GoalItem(text: 'A'), GoalItem(text: '첫 줄\n둘째 줄')];
+    await tester.pumpWidget(goalSidebar(goals));
+    expect(find.byIcon(Icons.more_vert), findsNothing);
+    expect(find.byTooltip('위로 이동'), findsNWidgets(2));
+    expect(find.byTooltip('메인 화면으로 보내기'), findsNWidgets(2));
+    // 접기 버튼 왼쪽에 ↑, 오른쪽에 + 가 있다
+    final foldX = tester.getCenter(find.byTooltip('접기')).dx;
+    expect(tester.getCenter(find.byTooltip('위로 이동').at(1)).dx, lessThan(foldX));
+    expect(
+      tester.getCenter(find.byTooltip('아래에 항목 추가').at(1)).dx,
+      greaterThan(foldX),
+    );
+    await tester.tap(find.byTooltip('아래로 이동').first);
+    await tester.pump();
+    expect(goals.last.text, 'A');
+    await tester.tap(find.byTooltip('아래에 항목 추가').first);
+    await tester.pump();
+    expect(goals.length, 3);
+
+    final items = [AwarenessItem(text: 'B'), AwarenessItem(text: 'C')];
+    await tester.pumpWidget(awarenessSidebar(items));
+    expect(find.byIcon(Icons.more_vert), findsNothing);
+    expect(find.byTooltip('메인 화면으로 보내기'), findsNothing);
+    await tester.tap(find.byTooltip('위로 이동').last);
+    await tester.pump();
+    expect(items.first.text, 'C');
+    expect(tester.takeException(), isNull);
+  });
 }

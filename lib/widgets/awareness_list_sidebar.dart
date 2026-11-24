@@ -62,7 +62,6 @@ class AwarenessListSidebar extends StatefulWidget {
 class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
   late TextEditingController _titleController;
   late List<AwarenessItem> _items;
-  int? _activeActionIndex;
 
   // 순번 직접 변경: 번호를 눌러 새 순번을 입력하고 엔터/포커스 이동/저장 시 그 위치로 옮긴다
   int? _numberEditIndex;
@@ -87,7 +86,6 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
         item.controller.dispose();
       }
       _items = [AwarenessItem()];
-      _activeActionIndex = null;
       _numberEditIndex = null;
       _currentFilePath = null;
       widget.runRecords.clear();
@@ -249,13 +247,16 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
       final fileName = result.fileName;
       // 제목이 열린 파일 이름과 다르면 같은 폴더에 제목 이름으로 새 파일을 만들고 기존 파일은 둔다
       final previousPath = _currentFilePath;
-      final file = File(ListFileService.saveTargetPath(
-        currentFilePath: previousPath,
-        directory: path,
-        fileName: fileName,
-      ));
-      final keptPath =
-          previousPath != null && previousPath != file.path ? previousPath : null;
+      final file = File(
+        ListFileService.saveTargetPath(
+          currentFilePath: previousPath,
+          directory: path,
+          fileName: fileName,
+        ),
+      );
+      final keptPath = previousPath != null && previousPath != file.path
+          ? previousPath
+          : null;
       savePath = file.path;
       final content = ListFileService.serialize(
         kind: ListFileKind.awareness,
@@ -296,7 +297,8 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
     final path = _currentFilePath;
     if (path == null) return;
     final screenItems = [
-      for (final it in _items) (text: it.controller.text, collapsed: it.collapsed),
+      for (final it in _items)
+        (text: it.controller.text, collapsed: it.collapsed),
     ];
     // 여러 번 빨리 눌러도 파일 쓰기가 겹치지 않게 순서대로 실행한다
     _foldWrite = _foldWrite.then((_) async {
@@ -340,9 +342,11 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
 
         for (var i = 0; i < data.items.length; i++) {
           final itemText = data.items[i];
-          _items.add(AwarenessItem(text: itemText)
-            ..controller.text = itemText
-            ..collapsed = data.collapsed[i]);
+          _items.add(
+            AwarenessItem(text: itemText)
+              ..controller.text = itemText
+              ..collapsed = data.collapsed[i],
+          );
         }
 
         if (_items.isEmpty) _items.add(AwarenessItem());
@@ -399,7 +403,6 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
         if (to != from) {
           final moved = _items.removeAt(from);
           _items.insert(to, moved);
-          _activeActionIndex = null;
         }
       }
     });
@@ -423,7 +426,6 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
       setState(() {
         final item = _items.removeAt(index);
         _items.insert(index - 1, item);
-        _activeActionIndex = index - 1;
       });
     }
   }
@@ -433,7 +435,6 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
       setState(() {
         final item = _items.removeAt(index);
         _items.insert(index + 1, item);
-        _activeActionIndex = index + 1;
       });
     }
   }
@@ -652,12 +653,11 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
 
   Widget _buildBubbleItem(int index, Key key) {
     final item = _items[index];
-    final bool isExpanded = _activeActionIndex == index;
 
     return Container(
       key: key,
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      padding: const EdgeInsets.fromLTRB(15, 5, 0, 5),
+      padding: const EdgeInsets.fromLTRB(15, 5, 15, 5),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -668,87 +668,14 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: isExpanded
-              ? Colors.orangeAccent.withAlpha(100)
-              : Colors.white10,
-        ),
+        border: Border.all(color: Colors.white10),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _buildNumberBadge(index),
           const SizedBox(width: 10),
-          Expanded(child: _buildItemText(item)),
-          isExpanded
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _iconBtn(
-                          Icons.arrow_upward,
-                          Colors.orangeAccent,
-                          () => _moveUp(index),
-                        ),
-                        _iconBtn(
-                          Icons.arrow_downward,
-                          Colors.orangeAccent,
-                          () => _moveDown(index),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _iconBtn(
-                          Icons.add_circle_outline,
-                          Colors.blueAccent,
-                          () => _addItem(index),
-                        ),
-                        _iconBtn(
-                          Icons.remove_circle_outline,
-                          Colors.white38,
-                          () => _handleDelete(index),
-                        ),
-                        InkWell(
-                          onTap: () =>
-                              setState(() => _activeActionIndex = null),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 8,
-                            ),
-                            child: const Icon(
-                              Icons.chevron_right,
-                              color: Colors.white54,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                )
-              : InkWell(
-                  onTap: () => setState(() => _activeActionIndex = index),
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 15,
-                    ),
-                    child: const Icon(
-                      Icons.more_vert,
-                      color: Colors.white24,
-                      size: 20,
-                    ),
-                  ),
-                ),
+          Expanded(child: _buildItemText(item, index)),
         ],
       ),
     );
@@ -802,8 +729,8 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
     );
   }
 
-  // 항목 내용: 한 줄을 넘는 긴 항목에만 상단 가운데 접기(^)/펼치기(v) 버튼을 보인다 (2026-11-21 하단→상단)
-  Widget _buildItemText(AwarenessItem item) {
+  // 항목 내용: 위 도구 줄(왼쪽 ↑↓ · 가운데 접기/펼치기 · 오른쪽 +−) 아래에 글을 둔다 (2026-11-24)
+  Widget _buildItemText(AwarenessItem item, int index) {
     const textStyle = TextStyle(color: Colors.white, fontSize: 14);
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -819,24 +746,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isLong)
-              Tooltip(
-                message: item.collapsed ? '펼치기' : '접기',
-                child: InkWell(
-                  onTap: () => _setCollapsed(item, !item.collapsed),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Icon(
-                      item.collapsed
-                          ? Icons.keyboard_arrow_down
-                          : Icons.keyboard_arrow_up,
-                      size: 18,
-                      color: Colors.white54,
-                    ),
-                  ),
-                ),
-              ),
+            _buildItemToolbar(item, index, isLong),
             if (collapsed)
               // 접힌 상태: 첫 줄만 보이고, 누르면 펼쳐서 편집한다
               GestureDetector(
@@ -874,19 +784,98 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
     );
   }
 
-  Widget _iconBtn(IconData icon, Color color, VoidCallback onPressed) {
+  // 항목 위 도구 줄 (2026-11-24 사용자 지시: 오른쪽 +,-,… 묶음을 없애고 접기/펼치기 버튼 좌우에 배치).
+  // 가운데 칸은 폭을 고정해 긴 항목이 아니어도 버튼 위치가 같고, 좁으면 양쪽 묶음만 줄어든다.
+  Widget _buildItemToolbar(AwarenessItem item, int index, bool isLong) {
+    return Row(
+      children: [
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _iconBtn(
+                  Icons.arrow_upward,
+                  Colors.orangeAccent,
+                  () => _moveUp(index),
+                  '위로 이동',
+                ),
+                _iconBtn(
+                  Icons.arrow_downward,
+                  Colors.orangeAccent,
+                  () => _moveDown(index),
+                  '아래로 이동',
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 50,
+          child: isLong
+              ? Tooltip(
+                  message: item.collapsed ? '펼치기' : '접기',
+                  child: InkWell(
+                    onTap: () => _setCollapsed(item, !item.collapsed),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Icon(
+                      item.collapsed
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
+                      size: 18,
+                      color: Colors.white54,
+                    ),
+                  ),
+                )
+              : null,
+        ),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _iconBtn(
+                  Icons.add_circle_outline,
+                  Colors.blueAccent,
+                  () => _addItem(index),
+                  '아래에 항목 추가',
+                ),
+                _iconBtn(
+                  Icons.remove_circle_outline,
+                  Colors.white38,
+                  () => _handleDelete(index),
+                  '항목 삭제',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _iconBtn(
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+    String tooltip,
+  ) {
     return IconButton(
       icon: Icon(icon, color: color, size: 18),
+      tooltip: tooltip,
       onPressed: onPressed,
       constraints: const BoxConstraints(),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
     );
   }
 
   void _addItem(int index) {
     setState(() {
       _items.insert(index + 1, AwarenessItem());
-      _activeActionIndex = null;
     });
     widget.onItemsChanged(_items);
   }
@@ -902,7 +891,6 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
             _items[0].controller.clear();
             _items[0].text = "";
           }
-          _activeActionIndex = null;
         });
         widget.onItemsChanged(_items);
       }
