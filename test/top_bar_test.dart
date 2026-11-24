@@ -64,15 +64,19 @@ void main() {
         moreOrLessEquals(settingsRight, epsilon: 1),
       );
     }
+    // 접어도 + 버튼은 − 버튼이 있던 자리·크기 그대로 (2026-11-24 사용자 지적)
+    final toggleRect = tester.getRect(find.byTooltip('컨트롤 접기'));
     await tester.tap(find.byTooltip('컨트롤 접기'));
     await tester.pump();
-    expect(daily, findsNothing);
-    expect(theme, findsNothing);
+    expect(daily.hitTestable(), findsNothing);
+    expect(theme.hitTestable(), findsNothing);
     expect(find.byTooltip('컨트롤 펼치기'), findsOneWidget);
+    expect(tester.getRect(find.byTooltip('컨트롤 펼치기')), toggleRect);
 
     await tester.tap(find.byTooltip('컨트롤 펼치기'));
     await tester.pump();
-    expect(daily, findsOneWidget);
+    expect(daily.hitTestable(), findsOneWidget);
+    expect(tester.getRect(find.byTooltip('컨트롤 접기')), toggleRect);
     expect(tester.takeException(), isNull);
   });
 

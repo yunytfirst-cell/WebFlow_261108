@@ -86,8 +86,22 @@ class _TopBarState extends State<TopBar> {
   double? _barLeft;
   double? _barWidth;
 
+  // 2026-11-24 사용자 지적 "− 누르면 + 버튼 위치가 바뀐다": 예전엔 접을 때 버튼을 트리에서 빼서
+  // 행 폭·FittedBox 축소 비율이 달라져 + 위치·크기가 변했다. 이제 숨긴 버튼도 자리를 그대로 차지하게
+  // (보이지 않고 눌리지 않게) 두어 + 버튼과 목표바·Daily 표시바 위치가 그대로 유지된다.
+  List<Widget> _keepPlaceWhenCollapsed(List<Widget> children) => [
+        for (final child in children)
+          Visibility(
+            visible: _controlsExpanded,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            child: child,
+          ),
+      ];
+
   void _measureIconsRow() {
-    if (!mounted || !_controlsExpanded) return;
+    if (!mounted) return;
     final stackBox = _stackKey.currentContext?.findRenderObject() as RenderBox?;
     final rowBox = _iconsRowKey.currentContext?.findRenderObject() as RenderBox?;
     if (stackBox == null || rowBox == null || !rowBox.hasSize) return;
@@ -276,7 +290,7 @@ class _TopBarState extends State<TopBar> {
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       // 접으면 + 버튼만 남으므로 왼쪽에 붙인다
-                      alignment: _controlsExpanded ? Alignment.center : Alignment.centerLeft,
+                      alignment: Alignment.center,
                       child: Row(
                         key: _iconsRowKey,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -293,7 +307,7 @@ class _TopBarState extends State<TopBar> {
                                 baseColor: widget.theme.primaryColor,
                                 textColor: widget.theme.textColor,
                               ),
-                              if (_controlsExpanded) ...[
+                              ..._keepPlaceWhenCollapsed([
                               const SizedBox(width: 12),
                               // Daily 아이콘
                               ClayButton(
@@ -322,10 +336,10 @@ class _TopBarState extends State<TopBar> {
                                 baseColor: widget.theme.backgroundColor,
                                 textColor: widget.theme.textColor,
                               ),
-                              ],
+                              ]),
                             ],
                           ),
-                          if (_controlsExpanded) ...[
+                          ..._keepPlaceWhenCollapsed([
                           const SizedBox(width: _modeThemeGap),
                           Row(
                             mainAxisSize: MainAxisSize.min,
@@ -371,7 +385,7 @@ class _TopBarState extends State<TopBar> {
                               ),
                             ],
                           ),
-                          ],
+                          ]),
                         ],
                       ),
                     ),

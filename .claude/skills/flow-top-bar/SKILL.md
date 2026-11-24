@@ -24,11 +24,13 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
   - 폭 계산식 간격 = `12*6 + _modeThemeGap`, + 버튼 몫 `buttonSize*0.45 + 44`.
   - `targetWidth`(예전 크기 기준 폭)는 이제 Daily 박스·목표바의 첫 프레임 대체값으로만 쓴다.
 - **모드·테마 사이 간격** `_modeThemeGap = 70` (예전 30의 2배 이상). 사용자 지시라 줄이지 않는다.
-- **+ 버튼**: Daily 앞. `_controlsExpanded`(기본 true, 앱 실행 중에만 기억). 펼침 상태 아이콘 `Icons.remove`·툴팁 `컨트롤 접기`, 접힘 상태 `Icons.add`·`컨트롤 펼치기`. 색 `theme.primaryColor`. 접으면 + 버튼만 남고(`if (_controlsExpanded) ...[ ]`로 나머지 숨김) `FittedBox.alignment`가 `centerLeft`가 된다.
+- **+ 버튼**: Daily 앞. `_controlsExpanded`(기본 true, 앱 실행 중에만 기억). 펼침 상태 아이콘 `Icons.remove`·툴팁 `컨트롤 접기`, 접힘 상태 `Icons.add`·`컨트롤 펼치기`. 색 `theme.primaryColor`. 접으면 나머지 버튼을 `_keepPlaceWhenCollapsed([...])`(`Visibility(visible: _controlsExpanded, maintainSize/Animation/State: true)`)로 **자리는 그대로 두고 보이지 않고 눌리지 않게** 한다. `FittedBox.alignment`는 항상 center.
+  - 사용자 지적(2026-11-24 "− 누르면 + 버튼 위치가 다른 곳으로 바뀐다"): 원인은 예전에 `if (_controlsExpanded) ...[ ]`로 버튼을 트리에서 빼서 행 폭과 FittedBox 축소 비율이 바뀌고 정렬도 centerLeft로 바뀐 것. **버튼을 트리에서 빼지 않는다.** 아이콘 행 측정도 접힌 상태에서 계속 같은 값이 나온다.
+  - 테스트: 접기 전후·다시 펼친 뒤 + 버튼 `getRect`가 같고, 숨긴 버튼은 `hitTestable()`로 찾히지 않는다.
 
 ## 목표바(목표 제목 + 티커) 정렬·글자 (2026-11-24 사용자 지시)
 
-- "−/+ 버튼 앞쪽과 목표바 시작 위치를 정렬, 끝은 설정 아이콘 끝에 맞춤": 아이콘 행 바깥 Row에 `_iconsRowKey`, Stack에 `_stackKey`. build마다 `addPostFrameCallback(_measureIconsRow)`로 Row의 왼쪽·오른쪽 끝을 `localToGlobal(…, ancestor: stackBox)`로 잰다(FittedBox 축소가 반영됨). 0.5 넘게 바뀌었을 때만 setState(무한 루프 방지). **펼친 상태일 때만** 갱신한다(접으면 + 버튼만 남아 폭이 줄기 때문, 목표바는 마지막 펼친 위치 유지).
+- "−/+ 버튼 앞쪽과 목표바 시작 위치를 정렬, 끝은 설정 아이콘 끝에 맞춤": 아이콘 행 바깥 Row에 `_iconsRowKey`, Stack에 `_stackKey`. build마다 `addPostFrameCallback(_measureIconsRow)`로 Row의 왼쪽·오른쪽 끝을 `localToGlobal(…, ancestor: stackBox)`로 잰다(FittedBox 축소가 반영됨). 0.5 넘게 바뀌었을 때만 setState(무한 루프 방지). 접힌 상태에서도 숨긴 버튼이 자리를 차지하므로 값이 같다.
 - `GoalTitleDisplay`와 `TopBarTicker`의 `Positioned`는 `left: _barLeft, width: _barWidth`(잰 값이 없을 때 첫 프레임은 예전처럼 `(maxWidth-120).clamp(180,700)` 가운데). 티커에는 `columnWidth: tickerWidth`, `maxWidth: null`을 넘긴다(maxWidth를 넘기면 티커가 자기 폭을 따로 계산해 어긋남).
 - "목표바 안의 글자도 오토레이아웃": `_getTickerFontSize()` = 예전 값(base)과 `_barWidth * 0.045` 중 작은 값(최소 11). 티커 줄 높이(`_getTickerBarHeight`)도 같은 함수를 쓰므로 함께 줄어든다.
 - 테스트: `test/top_bar_test.dart`가 티커·목표 제목·Daily 박스의 좌우 끝이 −버튼 왼쪽·설정 오른쪽과 1 이내로 같은지 검사한다. Daily 박스는 현재 시간 글자가 스케줄 아이콘보다 왼쪽인지도 본다.
