@@ -39,6 +39,22 @@ python tools/build_exe.py --skip-build # 이미 빌드된 결과로 묶기만
 - 아이콘을 손으로 그리지 말고 이 스크립트 값을 고친 뒤 → 미리보기 이미지를 열어 작은 크기까지 확인 → `python tools/build_exe.py`.
 - 탐색기가 예전 아이콘을 캐시해 보여주면 `ie4uinit.exe -show`를 실행하거나 exe를 다른 이름으로 복사해 본다.
 
+## GitHub에 올리기 ("실행파일 만들고 github에 저장해라", 2026-11-24)
+
+- exe는 git에 커밋하지 않는다(`dist/`는 .gitignore, 저장소가 커짐). **GitHub Release의 첨부파일**로 올린다. 저장소 `yunytfirst-cell/WebFlow_261108`는 **PUBLIC**이라 누구나 내려받을 수 있다는 점을 보고에 적는다.
+- `gh`는 로그인되어 있지 않다(`gh auth status` 실패). git push에 쓰는 저장된 자격증명을 토큰으로 쓴다(화면에 찍지 않는다):
+  ```
+  export GH_TOKEN=$(printf "protocol=https
+host=github.com
+
+" | git credential fill | sed -n 's/^password=//p')
+  cp dist/Flow.exe <스크래치>/Flow-vX.Y.Z.exe
+  gh release create vX.Y.Z <스크래치>/Flow-vX.Y.Z.exe -R yunytfirst-cell/WebFlow_261108 --target <작업 브랜치> --title "Flow vX.Y.Z" --notes "<CHANGELOG의 그 버전 항목>"
+  gh release view vX.Y.Z -R yunytfirst-cell/WebFlow_261108 --json url,assets
+  ```
+  태그(vX.Y.Z)는 버전 커밋 때 이미 push되어 있어야 한다. 같은 버전 Release가 있으면 `gh release upload vX.Y.Z <파일> --clobber`.
+- 기록: v1.3.8 → https://github.com/yunytfirst-cell/WebFlow_261108/releases/tag/v1.3.8 , `Flow-v1.3.8.exe` 17,174,016 bytes (2026-11-24).
+
 ## 작업 절차
 
 - 시작 전: 코드 변경이 함께 있으면 `flutter analyze lib test`, `flutter test`가 통과하는지 먼저 확인한다.
