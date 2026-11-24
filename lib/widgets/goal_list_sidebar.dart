@@ -855,25 +855,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
             ),
           ),
         ),
-        SizedBox(
-          width: 50,
-          child: isLong
-              ? Tooltip(
-                  message: goal.collapsed ? '펼치기' : '접기',
-                  child: InkWell(
-                    onTap: () => _setCollapsed(goal, !goal.collapsed),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Icon(
-                      goal.collapsed
-                          ? Icons.keyboard_arrow_down
-                          : Icons.keyboard_arrow_up,
-                      size: 18,
-                      color: Colors.white54,
-                    ),
-                  ),
-                )
-              : null,
-        ),
+        SizedBox(width: 50, child: Center(child: _buildFoldBox(goal, isLong))),
         Expanded(
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -898,6 +880,42 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
           ),
         ),
       ],
+    );
+  }
+
+  // 접기/펼치기 칸 (2026-11-24 사용자 지시): 접을 수 있든 없든 항상 색이 있는 사각형 테두리 박스를 보이고,
+  // 접을 수 있는(한 줄을 넘는) 항목일 때만 박스 안에 방향 모양(^ 접기 / v 펼치기)을 넣고 눌린다.
+  Widget _buildFoldBox(GoalItem goal, bool isLong) {
+    const color = Colors.blueAccent;
+    final box = Container(
+      width: 24,
+      height: 20,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isLong ? 0.25 : 0.08),
+        border: Border.all(
+          color: color.withValues(alpha: isLong ? 0.9 : 0.35),
+          width: 1.2,
+        ),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: isLong
+          ? Icon(
+              goal.collapsed
+                  ? Icons.keyboard_arrow_down
+                  : Icons.keyboard_arrow_up,
+              size: 18,
+              color: Colors.white,
+            )
+          : null,
+    );
+    if (!isLong) return box;
+    return Tooltip(
+      message: goal.collapsed ? '펼치기' : '접기',
+      child: InkWell(
+        onTap: () => _setCollapsed(goal, !goal.collapsed),
+        borderRadius: BorderRadius.circular(4),
+        child: box,
+      ),
     );
   }
 

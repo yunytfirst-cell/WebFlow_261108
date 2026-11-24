@@ -241,4 +241,34 @@ void main() {
     expect(items.first.text, 'C');
     expect(tester.takeException(), isNull);
   });
+
+  // 2026-11-24: 접기 칸은 항상 사각형 박스, 접을 수 있을 때만 방향 모양 (두 리스트)
+  testWidgets('두 리스트: 접기 박스는 항상 보이고 방향 모양은 긴 항목에만', (tester) async {
+    setWide(tester);
+    Finder arrows() => find.byWidgetPredicate(
+      (w) =>
+          w is Icon &&
+          w.size == 18 &&
+          (w.icon == Icons.keyboard_arrow_up ||
+              w.icon == Icons.keyboard_arrow_down),
+    );
+    Finder boxes() => find.byWidgetPredicate(
+      (w) =>
+          w is Container &&
+          w.constraints?.maxWidth == 24 &&
+          w.constraints?.maxHeight == 20,
+    );
+    await tester.pumpWidget(
+      goalSidebar([GoalItem(text: '짧음'), GoalItem(text: '첫 줄\n둘째 줄')]),
+    );
+    expect(boxes(), findsNWidgets(2));
+    expect(arrows(), findsOneWidget);
+
+    await tester.pumpWidget(
+      awarenessSidebar([AwarenessItem(text: '짧음'), AwarenessItem(text: '짧음2')]),
+    );
+    expect(boxes(), findsNWidgets(2));
+    expect(arrows(), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

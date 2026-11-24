@@ -114,7 +114,7 @@ final Function(String?) onLoadDirectoryChanged;
 
 - 행: `_buildNumberBadge(index)` → `SizedBox(10)` → `Expanded(_buildItemText(항목, index))`. 박스 padding `fromLTRB(15, 5, 15, 5)`, 테두리 항상 `Colors.white10`.
 - **항목 도구 줄** (2026-11-24 사용자 지시 "리스트 옆에 +,-,... 그룹 제거하고, 접기펴기 버튼 좌우에 배치", 두 리스트 동일): 예전 오른쪽 `more_vert`→펼침 묶음(↑↓🎯+−>)과 `_activeActionIndex`는 **없앴다. 다시 만들지 않는다.**
-  `_buildItemText`의 Column 맨 위에 `_buildItemToolbar(항목, index, isLong)`을 **모든 항목에 항상** 둔다: `Row[ Expanded(FittedBox(scaleDown, centerRight, 왼쪽 묶음)), SizedBox(width 50, 긴 항목이면 접기/펼치기 버튼 아니면 빈칸), Expanded(FittedBox(scaleDown, centerLeft, 오른쪽 묶음)) ]`. 가운데 폭을 고정해 버튼 위치가 항목마다 같고, 좁은 폭에서는 양쪽 묶음만 줄어든다(넘침 없음).
+  `_buildItemText`의 Column 맨 위에 `_buildItemToolbar(항목, index, isLong)`을 **모든 항목에 항상** 둔다: `Row[ Expanded(FittedBox(scaleDown, centerRight, 왼쪽 묶음)), SizedBox(width 50, Center(_buildFoldBox(항목, isLong))), Expanded(FittedBox(scaleDown, centerLeft, 오른쪽 묶음)) ]`. 가운데 폭을 고정해 버튼 위치가 항목마다 같고, 좁은 폭에서는 양쪽 묶음만 줄어든다(넘침 없음).
   - 왼쪽: ↑ `arrow_upward`(orangeAccent, 툴팁 `위로 이동`, `_moveUp`) · ↓ `arrow_downward`(orangeAccent, `아래로 이동`, `_moveDown`) · (끝장만) 🎯 `gps_fixed`(greenAccent, `메인 화면으로 보내기`, `_sendToMain`).
   - 오른쪽: + `add_circle_outline`(blueAccent, `아래에 항목 추가`, `_addItem`) · − `remove_circle_outline`(white38, `항목 삭제`, `_handleDelete`).
   - `_iconBtn(icon, color, onPressed, tooltip)`: `IconButton` 아이콘 18, `constraints: BoxConstraints()`, padding 가로 6 세로 2.
@@ -128,7 +128,8 @@ final Function(String?) onLoadDirectoryChanged;
   - 사용자 지적(2026-11-21 "저장 버튼을 누를 때만 유지된다"): 원인은 ① 글자만으로 짝지어 저장 전에 고친 항목의 접힘이 빠짐 ② 비동기 쓰기가 겹쳐 앞선 상태가 덮어씀. 위 ②·순차 쓰기로 고쳤다.
   - **검사 방법(사용자 지시)**: 실제 파일로 "A 열기 → 접기/펼치기(저장 안 함, 글 수정 포함) → B 열기 → A 다시 열기 → 상태 그대로"를 `test/fold_persist_test.dart`가 두 리스트 모두 검사한다. 가짜 파일 선택창은 `class _FakePicker extends FilePicker`(같은 토큰이라 `FilePicker.platform =` 가능), 실제 파일 IO는 `runAsync(delay)`+`pump`를 여러 번 반복해 기다린다(한 번으로는 불러오기가 안 끝남). 접은 뒤엔 `펼치기` 툴팁 순번이 바뀌므로 `at(i)`를 항목 순서로 다시 계산한다.
   - 앱 실행 중에는 main이 항목 객체를 보관하므로 사이드바를 닫았다 열어도 유지.
-  `_buildItemText`는 `LayoutBuilder`+`TextPainter(maxLines: 1, 글자 14 흰색)`로 **한 줄을 넘는 항목에만** 도구 줄 가운데 칸(글 위, 2026-11-21 하단→상단)에 버튼을 보인다: 펼쳐진 상태 `Icons.keyboard_arrow_up`(^, 툴팁 `접기`), 접힌 상태 `Icons.keyboard_arrow_down`(v, 툴팁 `펼치기`), 크기 18, white54 (`InkWell` 모서리 8).
+  **접기 박스 `_buildFoldBox`** (2026-11-24 사용자 지시 "접기 버튼은 가능하든 안 하든 사각형 박스로 아웃라인과 컬러 표시, 접기가 가능하면 그때 방향 모양"): 도구 줄 가운데 칸에 **모든 항목에 항상** 24×20 사각형(모서리 4)을 둔다. 색은 끝장 blueAccent / 알아차림 orangeAccent. 접을 수 있으면 채움 alpha 0.25·테두리 alpha 0.9(두께 1.2) + 안에 방향 아이콘(흰색 18) + `Tooltip`·`InkWell`로 눌림, 접을 수 없으면 채움 0.08·테두리 0.35, 아이콘·툴팁·눌림 없음.
+  접을 수 있는지는 `_buildItemText`의 `LayoutBuilder`+`TextPainter(maxLines: 1, 글자 14 흰색)`로 **한 줄을 넘는지** 판단한다(`isLong`). 펼쳐진 상태 `Icons.keyboard_arrow_up`(^, 툴팁 `접기`), 접힌 상태 `Icons.keyboard_arrow_down`(v, 툴팁 `펼치기`).
   접힌 상태는 줄바꿈을 공백으로 바꾼 첫 줄 `Text(maxLines 1, ellipsis)`만 보이고, 글을 누르면 펼쳐진다. 입력 중(`onChanged`)에는 `setState`로 다시 그려 한 줄을 넘는 순간 버튼이 나타난다.
 
 ## 6. 코드 스타일
@@ -146,4 +147,4 @@ final Function(String?) onLoadDirectoryChanged;
 - `test/list_file_service_test.dart`: 종류별 왕복, 접힘 `[FOLDED]` 왕복·`applyFoldState`(디스크 제목/항목/카운터 유지)·예전 파일은 펼침, 폴더·카운터 줄 분리, 다른 리스트 카운터 무시, 예전 번호 형식 읽기, `pickerInitialDirectory` 정규화, `saveTargetPath`(같은 제목 덮어쓰기·다른 제목 새 파일·번호 붙이기·번호 붙은 파일 인정·특수문자·실제 파일 유지).
 - `test/run_counter_service_test.dart`: 줄 생성/읽기, 일반 줄 무시, 접두어가 다른 줄 무시, `todayKey`.
 - `test/fold_persist_test.dart`: 저장 없이 접기/펼치기 → 다른 파일 → 다시 열기 상태 유지(두 리스트, 실제 파일).
-- `test/goal_list_sidebar_test.dart`: 알아차림 사이드바는 전달받은 카운터만 바꾼다, 오늘 실행 표시와 화살표, 360/768/1280 폭에서 예외 없음, 순번 입력+엔터로 이동·범위 밖 번호는 맨 뒤, 긴 항목에만 접기/펼치기 버튼(두 리스트), 도구 줄(more_vert 없음·↑ 접기 왼쪽·+ 오른쪽·버튼 동작, 🎯는 끝장만).
+- `test/goal_list_sidebar_test.dart`: 알아차림 사이드바는 전달받은 카운터만 바꾼다, 오늘 실행 표시와 화살표, 360/768/1280 폭에서 예외 없음, 순번 입력+엔터로 이동·범위 밖 번호는 맨 뒤, 긴 항목에만 접기/펼치기 버튼(두 리스트), 도구 줄(more_vert 없음·↑ 접기 왼쪽·+ 오른쪽·버튼 동작, 🎯는 끝장만), 접기 박스(24×20)는 모든 항목에 있고 방향 아이콘(크기 18 — 실행 카운터 화살표와 구분)은 긴 항목에만.
