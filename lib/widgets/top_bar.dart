@@ -67,6 +67,13 @@ class TopBar extends StatefulWidget implements PreferredSizeWidget {
 
 class _TopBarState extends State<TopBar> {
   int _currIndex = 0;
+
+  // 2026-11-24 사용자 지시: Daily 앞 "+" 버튼으로 상단 컨트롤 아이콘들을 접고 펼친다 (앱 실행 중에만 기억)
+  bool _controlsExpanded = true;
+
+  // 2026-11-24 사용자 지시: 상단 컨트롤 아이콘은 예전 크기의 2/3, 모드·테마 사이 간격은 예전(30)의 2배 이상
+  static const double _iconScale = 2 / 3;
+  static const double _modeThemeGap = 70.0;
   bool _showInitialMessage = true;
   List<Map<String, dynamic>>? _cachedFlattenedLines;
 
@@ -93,9 +100,12 @@ class _TopBarState extends State<TopBar> {
     final double modeRect = buttonSize * 0.45 + 10.0 + modeTextWidth + rectPadding; // Mode
     final double circleButtons = buttonSize * 3.0; // Memo, Sidebar, Settings
 
-    const double gaps = (12.0 * 5) + 30.0; // 아이콘 간격 5개(각 12px) + 좌우 그룹 간격(30px)
+    // 아이콘 간격 6개(각 12px, + 버튼 포함) + 모드·테마 사이 간격 + 접기(+) 버튼
+    const double gaps = (12.0 * 6) + _modeThemeGap;
+    final double toggleRect = buttonSize * 0.45 + rectPadding;
 
-    return (iconOnlyRect * 3 + modeRect + circleButtons + gaps).floorToDouble();
+    return (iconOnlyRect * 3 + modeRect + circleButtons + gaps + toggleRect)
+        .floorToDouble();
   }
 
   void _updateFlattenedLines() {
@@ -179,8 +189,13 @@ class _TopBarState extends State<TopBar> {
     // 하단 아이콘 행의 실측 원본 폭 계산
     final double unscaledIconsWidth = _calculateUnscaledIconsRowWidth(unifiedFontSize, widget.currentModeName);
 
-    // 스케줄 박스와 아이콘 행이 완벽히 동일한 영역 폭을 공유하도록 매칭 (절대 스케줄 박스가 더 크지 않음)
+    // 스케줄 박스 폭은 예전 아이콘 크기 기준을 유지한다 (아이콘만 2/3로 줄임)
     final double targetWidth = containerWidth < unscaledIconsWidth ? containerWidth : unscaledIconsWidth;
+
+    // 아이콘 행은 2/3 크기로 그린다
+    final double iconSize = unifiedFontSize * _iconScale;
+    final double iconsRowWidth = _calculateUnscaledIconsRowWidth(iconSize, widget.currentModeName);
+    final double iconsTargetWidth = containerWidth < iconsRowWidth ? containerWidth : iconsRowWidth;
 
     // 스케줄 박스 상하 여백 (상단 24px, 박스 76px, 하단 12px 간격)
     final double buttonRowTop = widget.showDailyScheduleBox ? 112.0 : 2.0;
@@ -224,23 +239,35 @@ class _TopBarState extends State<TopBar> {
                 left: 0,
                 child: Center(
                   child: SizedBox(
-                    width: targetWidth,
-                    height: (widget.maxHeight * 0.25).clamp(90.0, 165.0) * 0.35,
+                    width: iconsTargetWidth,
+                    height: (widget.maxHeight * 0.25).clamp(90.0, 165.0) * 0.35 * _iconScale,
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      alignment: Alignment.center,
+                      // 접으면 + 버튼만 남으므로 왼쪽에 붙인다
+                      alignment: _controlsExpanded ? Alignment.center : Alignment.centerLeft,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Daily 아이콘 (좌측 가장 끝)
+                              // 컨트롤 접기/펼치기 (+) — Daily 아이콘 앞
+                              ClayButton(
+                                icon: _controlsExpanded ? Icons.remove : Icons.add,
+                                onPressed: () => setState(() => _controlsExpanded = !_controlsExpanded),
+                                tooltip: _controlsExpanded ? "컨트롤 접기" : "컨트롤 펼치기",
+                                size: iconSize,
+                                baseColor: widget.theme.primaryColor,
+                                textColor: widget.theme.textColor,
+                              ),
+                              if (_controlsExpanded) ...[
+                              const SizedBox(width: 12),
+                              // Daily 아이콘
                               ClayButton(
                                 icon: Icons.calendar_today_rounded,
                                 onPressed: widget.onDailyPressed,
                                 tooltip: "Daily 스케줄",
-                                size: unifiedFontSize,
+                                size: iconSize,
                                 baseColor: widget.theme.accentColor,
                                 textColor: widget.theme.textColor,
                               ),
@@ -249,7 +276,7 @@ class _TopBarState extends State<TopBar> {
                                 icon: Icons.psychology_outlined,
                                 onPressed: widget.onToggleAwarenessSidebar,
                                 tooltip: "알아차림",
-                                size: unifiedFontSize,
+                                size: iconSize,
                                 baseColor: widget.theme.primaryColor,
                                 textColor: widget.theme.textColor,
                               ),
@@ -258,13 +285,15 @@ class _TopBarState extends State<TopBar> {
                                 icon: Icons.dashboard_customize,
                                 label: widget.currentModeName.toUpperCase(),
                                 onPressed: widget.onToggleDisplayMode,
-                                size: unifiedFontSize,
+                                size: iconSize,
                                 baseColor: widget.theme.backgroundColor,
                                 textColor: widget.theme.textColor,
                               ),
+                              ],
                             ],
                           ),
-                          const SizedBox(width: 30),
+                          if (_controlsExpanded) ...[
+                          const SizedBox(width: _modeThemeGap),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -272,7 +301,7 @@ class _TopBarState extends State<TopBar> {
                                 icon: Icons.palette_outlined,
                                 onPressed: widget.onToggleTheme,
                                 tooltip: "테마: ${widget.theme.name}",
-                                size: unifiedFontSize,
+                                size: iconSize,
                                 baseColor: widget.theme.accentColor,
                                 textColor: widget.theme.textColor,
                               ),
@@ -281,7 +310,7 @@ class _TopBarState extends State<TopBar> {
                                 icon: Icons.edit,
                                 onPressed: widget.onMemoPressed,
                                 tooltip: "메모장",
-                                size: unifiedFontSize,
+                                size: iconSize,
                                 baseColor: widget.theme.primaryColor,
                                 isCircle: true,
                                 textColor: widget.theme.textColor,
@@ -291,7 +320,7 @@ class _TopBarState extends State<TopBar> {
                                 icon: Icons.app_registration_rounded,
                                 onPressed: widget.onToggleSiderbar,
                                 tooltip: "끝장 리스트",
-                                size: unifiedFontSize,
+                                size: iconSize,
                                 baseColor: widget.theme.backgroundColor,
                                 isCircle: true,
                                 textColor: widget.theme.textColor,
@@ -302,13 +331,14 @@ class _TopBarState extends State<TopBar> {
                                 icon: Icons.settings_suggest_rounded,
                                 onPressed: widget.onSettingsPressed,
                                 tooltip: "설정",
-                                size: unifiedFontSize,
+                                size: iconSize,
                                 baseColor: widget.theme.accentColor,
                                 isCircle: true,
                                 textColor: widget.theme.textColor,
                               ),
                             ],
                           ),
+                          ],
                         ],
                       ),
                     ),

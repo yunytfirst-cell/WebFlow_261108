@@ -526,18 +526,30 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const SizedBox(width: 40),
+                            // 2026-11-24 사용자 지시: 실행·누적 박스를 제목 아이콘 바로 앞에 둔다.
+                            // 둘을 한 FittedBox로 묶어 폭이 좁으면 함께 줄어든다(오토 레이아웃).
                             Expanded(
                               child: Center(
                                 child: FittedBox(
                                   fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    "📋성공의열쇠 시스템",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: responsiveFontSize,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      RunCounterPanel(
+                                        runRecords: _runRecords,
+                                        onRecordsChanged:
+                                            widget.onRunRecordsChanged,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        "📋성공의열쇠 시스템",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: responsiveFontSize,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -615,11 +627,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      RunCounterPanel(
-                        runRecords: _runRecords,
-                        onRecordsChanged: widget.onRunRecordsChanged,
-                      ),
+                      const SizedBox(height: 6),
                       const Divider(
                         color: Colors.white24,
                         indent: 20,

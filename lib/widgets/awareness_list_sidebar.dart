@@ -496,22 +496,34 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
                               ),
                               onPressed: widget.onClose,
                             ),
+                            // 2026-11-24 사용자 지시: 실행·누적 박스를 제목 아이콘 바로 앞에 둔다.
+                            // 둘을 한 FittedBox로 묶어 폭이 좁으면 함께 줄어든다(오토 레이아웃).
                             Expanded(
                               child: Center(
                                 child: FittedBox(
                                   fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    "👁️ 알아차림 리스트",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: responsiveFontSize,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      RunCounterPanel(
+                                        runRecords: widget.runRecords,
+                                        onRecordsChanged:
+                                            widget.onRunRecordsChanged,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        "👁️ 알아차림 리스트",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: responsiveFontSize,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 40),
                           ],
                         ),
                       ),
@@ -578,11 +590,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      RunCounterPanel(
-                        runRecords: widget.runRecords,
-                        onRecordsChanged: widget.onRunRecordsChanged,
-                      ),
+                      const SizedBox(height: 6),
                       const Divider(
                         color: Colors.white24,
                         indent: 20,

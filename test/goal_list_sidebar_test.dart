@@ -267,25 +267,38 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  // 2026-11-24: 화살표는 누적 박스 오른쪽, 오늘 실행 박스 높이는 예전(약 100)의 절반 (두 리스트)
-  testWidgets('두 리스트: 실행 카운터 화살표는 누적 오른쪽, 박스는 낮다', (tester) async {
+  // 2026-11-24: 실행 박스는 제목 앞(위쪽 제목 줄), 화살표는 누적 오른쪽에 세로 (두 리스트)
+  testWidgets('두 리스트: 실행 박스는 제목 앞, 화살표는 누적 오른쪽 세로', (tester) async {
     setWide(tester);
-    for (final sidebar in [
-      goalSidebar([GoalItem()]),
-      awarenessSidebar([AwarenessItem()]),
+    for (final (sidebar, title) in [
+      (goalSidebar([GoalItem()]), '📋성공의열쇠 시스템'),
+      (awarenessSidebar([AwarenessItem()]), '👁️ 알아차림 리스트'),
     ]) {
       await tester.pumpWidget(sidebar);
-      final totalX = tester.getTopRight(find.textContaining('누적')).dx;
+      final up = tester.getCenter(find.byTooltip('오늘 실행 횟수 늘리기'));
+      final down = tester.getCenter(find.byTooltip('오늘 실행 횟수 줄이기'));
       expect(
-        tester.getCenter(find.byTooltip('오늘 실행 횟수 늘리기')).dx,
-        greaterThan(totalX),
+        up.dx,
+        greaterThan(tester.getTopRight(find.textContaining('누적')).dx),
+      );
+      expect(down.dy, greaterThan(up.dy));
+      expect((down.dx - up.dx).abs(), lessThan(1));
+      final panel = find.byType(RunCounterPanel);
+      expect(
+        tester.getTopRight(panel).dx,
+        lessThan(tester.getTopLeft(find.text(title)).dx),
       );
       expect(
-        tester.getCenter(find.byTooltip('오늘 실행 횟수 줄이기')).dx,
-        greaterThan(tester.getCenter(find.byTooltip('오늘 실행 횟수 늘리기')).dx),
+        tester.getCenter(panel).dy,
+        lessThan(tester.getTopLeft(find.text('저장')).dy),
       );
-      expect(tester.getSize(find.byType(RunCounterPanel)).height, lessThan(56));
+      expect(tester.getSize(panel).height, lessThan(56));
     }
-    expect(tester.takeException(), isNull);
+    for (final width in [360.0, 768.0]) {
+      tester.view.physicalSize = Size(width, 800);
+      await tester.pumpWidget(awarenessSidebar([AwarenessItem()]));
+      await tester.pumpWidget(goalSidebar([GoalItem()]));
+      expect(tester.takeException(), isNull, reason: 'Width: $width');
+    }
   });
 }

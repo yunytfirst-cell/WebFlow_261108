@@ -24,6 +24,7 @@
 | 버전 번호·변경 이력(CHANGELOG)·git 태그 | `flow-versioning` |
 | 창 크기·위치(모니터보다 작게), 창 제목·최소 크기 | `flow-window` |
 | skill 기록 규칙(명령 없어도 저장)·자동 점검 훅 | `flow-skill-record` |
+| 메인 화면 상단바 컨트롤 아이콘(+ 접기, Daily, 모드, 테마 …)·크기·간격 | `flow-top-bar` |
 
 맞는 skill이 없으면 새로 만들고 이 표에 추가한다.
 
