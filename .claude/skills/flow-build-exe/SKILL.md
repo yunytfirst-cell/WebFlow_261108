@@ -32,6 +32,13 @@ python tools/build_exe.py --skip-build # 이미 빌드된 결과로 묶기만
 3. Enigma 설정(.evb)은 **매번 현재 `dist\Flow` 파일 목록으로 새로 생성**한다. 예전 `dist\flow_single.evb`, `dist\flow_release.evb`는 파일 목록이 옛 빌드에 고정되어 있어 쓰지 않는다. 입력 `dist\Flow\flow.exe`, 출력 `dist\Flow.exe`, 파일 압축 켬, 레지스트리 가상화 끔.
 4. `C:\Program Files (x86)\Enigma Virtual Box\enigmavbconsole.exe <evb>`로 묶고, 출력에 `successfully saved`가 없으면 실패로 끝낸다.
 
+## 앱 아이콘 (2026-11-24 사용자 지적 "실행파일 아이콘이 너무 작아 안 보인다, 노란 메모 아이콘처럼 크고 잘 보이게")
+
+- 원인: 예전 아이콘은 어두운 남색 바탕에 얇은 노란 링이라, 작업표시줄·바탕화면 크기에서 검은 동그라미처럼 보였다.
+- 지금: `python tools/make_icon.py`가 `windows/runner/resources/app_icon.ico`(16·24·32·48·64·128·256)와 미리보기 `tools/app_icon_preview.png`를 만든다. 칸을 거의 꽉 채우는(여백 1%, 모서리 12%) **노란 그라데이션 사각형** + 진한 남색 굵은 링(위쪽 열림) + 굵은 위쪽 화살표. 16·24px은 링을 빼고 화살표만 더 굵게.
+- 아이콘을 손으로 그리지 말고 이 스크립트 값을 고친 뒤 → 미리보기 이미지를 열어 작은 크기까지 확인 → `python tools/build_exe.py`.
+- 탐색기가 예전 아이콘을 캐시해 보여주면 `ie4uinit.exe -show`를 실행하거나 exe를 다른 이름으로 복사해 본다.
+
 ## 작업 절차
 
 - 시작 전: 코드 변경이 함께 있으면 `flutter analyze lib test`, `flutter test`가 통과하는지 먼저 확인한다.
@@ -44,6 +51,7 @@ python tools/build_exe.py --skip-build # 이미 빌드된 결과로 묶기만
   단일 exe를 실제로 띄워 창 제목 `Flow v<버전>`이 보이면 성공으로 보고한다. 개발용 `build\...low.exe` 창과 함께 떠 있어도 된다.
 - 빌드 기록: v1.2.0+8 → `dist\Flow.exe` 16.4MB, 파일 30개 묶음 (2026-11-21).
 - 빌드 기록: v1.2.2+10 → `dist\Flow.exe` 16.4MB, 파일 30개, 창 제목 `Flow v1.2.2` 확인 (2026-11-21).
+- 빌드 기록: v1.3.8+23 → 새 노란 아이콘, `dist\Flow.exe` (2026-11-24).
 - 빌드 기록: v1.3.7+22 → `dist\Flow.exe` 16.4MB, 파일 30개, 창 제목 `Flow v1.3.7` 확인 (2026-11-24). 바탕화면에 사용자가 옮겨 둔 옛 exe(`flow_single_26112103.exe`, v1.2.2)가 함께 떠 있었다 — 건드리지 않고, 새 버전은 `dist\Flow.exe`라고 알려준다.
 - 사용자는 "실행파일들것"처럼 줄여·오타로 요청하기도 한다 → "실행파일 만들 것"으로 보고 묻지 않고 이 절차를 실행한다.
 - 버전 확인은 `$v=(Get-Item dist\Flow.exe).VersionInfo; "$($v.FileVersion)"`처럼 문자열로 찍는다(`Select` 표 출력은 줄이 잘려 `1`만 보일 때가 있었음).
