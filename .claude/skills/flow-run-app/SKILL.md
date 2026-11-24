@@ -23,6 +23,7 @@ python tools/run_app.py --skip-build # 빌드 없이 바로 실행
 ```
 
 - 이미 떠 있는 개발용 Flow(`build\windows\x64\runner\Release\flow.exe`)는 닫고 새로 띄운다. 빌드 중 exe가 잠기는 것을 막기 위해서다. 배포용 `dist\Flow.exe`로 실행 중인 창은 건드리지 않는다.
+- `flutter build windows --release`가 exit 1로 실패하면 원인을 찾기 전에 **한 번 그대로 다시 실행**한다. 2026-11-24 첫 실행은 실패했지만 바로 다시 하니 성공했다(닫힌 exe 잠금이 늦게 풀린 것으로 보임). 두 번째도 실패하면 그때 `flutter build windows --release`의 출력을 직접 본다.
 - 끝나면 "앱을 화면에 띄웠다"와 무엇을 확인하면 되는지(바뀐 기능, 눌러볼 버튼)를 짧게 알려준다.
 - 실행만 했고 내가 직접 조작해 보지 않았으면 그렇다고 말한다.
 
