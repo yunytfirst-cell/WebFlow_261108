@@ -33,6 +33,8 @@ void main() {
     );
 
     final daily = find.byTooltip('Daily 스케줄');
+    // 컨트롤 행 위쪽 여백(창 위 끝에서 24 이상 떨어짐)
+    expect(tester.getTopLeft(daily).dy, greaterThanOrEqualTo(TopBar.topGap));
     final theme = find.byTooltip(RegExp('^테마'));
     expect(daily, findsOneWidget);
     // + 버튼은 Daily 앞(왼쪽)

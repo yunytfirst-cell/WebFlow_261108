@@ -301,4 +301,31 @@ void main() {
       expect(tester.takeException(), isNull, reason: 'Width: $width');
     }
   });
+
+  // 2026-11-24: 사이드바 폭이 좁으면 항목 글자·아이콘도 함께 작아진다 (두 리스트, 불러온 항목 포함)
+  testWidgets('두 리스트: 좁은 폭에서 항목 글자가 작아진다', (tester) async {
+    double itemFont() => tester
+        .widget<TextField>(
+          find
+              .byWidgetPredicate(
+                (w) => w is TextField && w.keyboardType != TextInputType.number,
+              )
+              .last,
+        )
+        .style!
+        .fontSize!;
+    for (final build in [
+      () => goalSidebar([GoalItem(text: '항목')]),
+      () => awarenessSidebar([AwarenessItem(text: '항목')]),
+    ]) {
+      setWide(tester);
+      await tester.pumpWidget(build());
+      expect(itemFont(), 14);
+      tester.view.physicalSize = const Size(600, 900); // 사이드바 폭 288
+      await tester.pumpWidget(build());
+      expect(itemFont(), lessThan(14));
+      expect(itemFont(), greaterThanOrEqualTo(14 * 0.7));
+    }
+    expect(tester.takeException(), isNull);
+  });
 }

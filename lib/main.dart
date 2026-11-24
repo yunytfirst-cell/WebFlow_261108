@@ -523,8 +523,10 @@ class _MainAreaState extends State<MainArea> with WindowListener {
                   child: Column(
                     children: [
                       SizedBox(
+                        // 상단바 위 여백(TopBar.topGap)만큼 본문도 내린다
                         height:
-                            ((screenSize.height * 0.24).clamp(85.0, 160.0) +
+                            (TopBar.topGap +
+                            (screenSize.height * 0.24).clamp(85.0, 160.0) +
                             (_showDailyScheduleBox ? 112.0 : 0.0)),
                       ),
                       Expanded(

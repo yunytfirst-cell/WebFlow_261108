@@ -70,6 +70,11 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
 
   // 순번 직접 변경: 번호를 눌러 새 순번을 입력하고 엔터/포커스 이동/저장 시 그 위치로 옮긴다
   int? _numberEditIndex;
+
+  // 2026-11-24 사용자 지시 "텍스트 및 아이콘 오토레이아웃": 사이드바 폭에 따라 글자·아이콘 크기를 함께 줄인다.
+  // 폭 480 이상이면 1.0, 좁아질수록 비례해서 최소 0.7까지. build에서 폭을 계산할 때 갱신한다.
+  double _uiScale = 1.0;
+  double _sz(double base) => base * _uiScale;
   final TextEditingController _numberController = TextEditingController();
   final FocusNode _numberFocus = FocusNode();
   String? _currentFilePath;
@@ -492,6 +497,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
       minPanelWidth,
       maxPanelWidth,
     );
+    _uiScale = (currentWidth / 480).clamp(0.7, 1.0);
 
     double minSide = screenW < screenH ? screenW : screenH;
     double responsiveFontSize = (minSide * 0.03).clamp(11.0, 18.0);
@@ -573,13 +579,15 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
                           style: TextStyle(
                             color: Colors.blueAccent,
                             fontWeight: FontWeight.bold,
-                            fontSize: responsiveFontSize.clamp(12.0, 16.0),
+                            fontSize: _sz(responsiveFontSize.clamp(12.0, 16.0)),
                           ),
                           decoration: InputDecoration(
                             hintText: "오늘의 스케줄",
                             hintStyle: TextStyle(
                               color: Colors.white54,
-                              fontSize: responsiveFontSize.clamp(11.0, 14.0),
+                              fontSize: _sz(
+                                responsiveFontSize.clamp(11.0, 14.0),
+                              ),
                             ),
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
@@ -683,14 +691,14 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
   ) {
     return ElevatedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 14, color: Colors.white),
+      icon: Icon(icon, size: _sz(14), color: Colors.white),
       label: Text(
         label,
-        style: const TextStyle(fontSize: 12, color: Colors.white),
+        style: TextStyle(fontSize: _sz(12), color: Colors.white),
       ),
       style: ElevatedButton.styleFrom(
         backgroundColor: color.withValues(alpha: 0.3),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: _sz(12), vertical: _sz(8)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
@@ -730,7 +738,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
   Widget _buildNumberBadge(int index) {
     if (_numberEditIndex == index) {
       return SizedBox(
-        width: 40,
+        width: _sz(40),
         child: TextField(
           controller: _numberController,
           focusNode: _numberFocus,
@@ -738,7 +746,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 12, color: Colors.white),
+          style: TextStyle(fontSize: _sz(12), color: Colors.white),
           decoration: InputDecoration(
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(vertical: 6),
@@ -763,11 +771,11 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
         onTap: () => _startNumberEdit(index),
         customBorder: const CircleBorder(),
         child: CircleAvatar(
-          radius: 12,
+          radius: _sz(12),
           backgroundColor: Colors.white24,
           child: Text(
             "${index + 1}",
-            style: const TextStyle(fontSize: 12, color: Colors.white),
+            style: TextStyle(fontSize: _sz(12), color: Colors.white),
           ),
         ),
       ),
@@ -776,7 +784,8 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
 
   // 항목 내용: 위 도구 줄(왼쪽 ↑↓🎯 · 가운데 접기/펼치기 · 오른쪽 +−) 아래에 글을 둔다 (2026-11-24)
   Widget _buildItemText(GoalItem goal, int index) {
-    const textStyle = TextStyle(color: Colors.white, fontSize: 14);
+    // 불러온 항목 글자도 사이드바 폭에 맞춰 함께 줄어든다
+    final textStyle = TextStyle(color: Colors.white, fontSize: _sz(14));
     return LayoutBuilder(
       builder: (context, constraints) {
         final painter = TextPainter(
@@ -896,8 +905,8 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
   Widget _buildFoldBox(GoalItem goal, bool isLong) {
     const color = Colors.blueAccent;
     final box = Container(
-      width: 24,
-      height: 20,
+      width: _sz(24),
+      height: _sz(20),
       decoration: BoxDecoration(
         color: color.withValues(alpha: isLong ? 0.25 : 0.08),
         border: Border.all(
@@ -911,7 +920,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
               goal.collapsed
                   ? Icons.keyboard_arrow_down
                   : Icons.keyboard_arrow_up,
-              size: 18,
+              size: _sz(18),
               color: Colors.white,
             )
           : null,
@@ -934,7 +943,7 @@ class _GoalListSidebarState extends State<GoalListSidebar> {
     String tooltip,
   ) {
     return IconButton(
-      icon: Icon(icon, color: color, size: 18),
+      icon: Icon(icon, color: color, size: _sz(18)),
       tooltip: tooltip,
       onPressed: onPressed,
       constraints: const BoxConstraints(),

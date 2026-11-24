@@ -9,8 +9,10 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 
 ## 구조 (`_TopBarState.build`, `Stack`)
 
-0. (`showDailyScheduleBox`일 때) Daily 스케줄 박스: top 24, 폭 `targetWidth`.
-1. 컨트롤 아이콘 행: top `buttonRowTop`(박스 있으면 112, 없으면 2).
+- **위쪽 여백** `TopBar.topGap = 24` (2026-11-24 사용자 지적 "컨트롤 바 위쪽 높이 간격 20~30 줄 것, 시각적으로 불편"; 원인: 아이콘 행이 top 2로 창 위 끝에 붙어 있었음). `preferredSize`에 더하고, 아이콘 행 top·Daily 스케줄 박스 top(24 → topGap+24)에도 더한다. **main.dart 본문 시작 SizedBox 높이에도 `TopBar.topGap`을 더한다**(안 그러면 본문과 겹침).
+
+0. (`showDailyScheduleBox`일 때) Daily 스케줄 박스: top `topGap + 24`, 폭 `targetWidth`.
+1. 컨트롤 아이콘 행: top `buttonRowTop = topGap + (박스 있으면 112, 없으면 2)`.
 2. 목표 제목 `GoalTitleDisplay`: bottom `티커 높이 + 10`.
 3. 티커 `TopBarTicker`: bottom 2.
 

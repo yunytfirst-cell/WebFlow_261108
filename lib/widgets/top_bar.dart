@@ -59,9 +59,13 @@ class TopBar extends StatefulWidget implements PreferredSizeWidget {
   @override
   State<TopBar> createState() => _TopBarState();
 
+  /// 2026-11-24 사용자 지시: 컨트롤 아이콘 행 위쪽 여백(창 위 끝에 붙어 보기 불편했음).
+  /// main.dart의 본문 시작 높이도 이만큼 더 내린다.
+  static const double topGap = 24.0;
+
   @override
   Size get preferredSize => Size.fromHeight(
-        (maxHeight * 0.25).clamp(90.0, 165.0) + (showDailyScheduleBox ? 112.0 : 0.0),
+        topGap + (maxHeight * 0.25).clamp(90.0, 165.0) + (showDailyScheduleBox ? 112.0 : 0.0),
       );
 }
 
@@ -198,7 +202,7 @@ class _TopBarState extends State<TopBar> {
     final double iconsTargetWidth = containerWidth < iconsRowWidth ? containerWidth : iconsRowWidth;
 
     // 스케줄 박스 상하 여백 (상단 24px, 박스 76px, 하단 12px 간격)
-    final double buttonRowTop = widget.showDailyScheduleBox ? 112.0 : 2.0;
+    final double buttonRowTop = TopBar.topGap + (widget.showDailyScheduleBox ? 112.0 : 2.0);
 
     return AppBar(
       backgroundColor: Colors.transparent,
@@ -214,7 +218,7 @@ class _TopBarState extends State<TopBar> {
               // 0. Daily Schedule 표시 영역 (아이콘 행과 targetWidth 동일하게 맞춤)
               if (widget.showDailyScheduleBox)
                 Positioned(
-                  top: 24,
+                  top: TopBar.topGap + 24,
                   left: 0,
                   right: 0,
                   child: Center(
