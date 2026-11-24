@@ -37,16 +37,6 @@ class _RunCounterPanelState extends State<RunCounterPanel> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 320;
-        final count = Text(
-          '$_todayCount',
-          style: const TextStyle(
-            color: Colors.amberAccent,
-            fontSize: 22,
-            height: 1.1,
-            fontWeight: FontWeight.bold,
-            fontFeatures: [FontFeature.tabularFigures()],
-          ),
-        );
         final cumulativeCount = Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
@@ -88,13 +78,13 @@ class _RunCounterPanelState extends State<RunCounterPanel> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // 2026-11-24 사용자 지시: "오늘 실행 N" 표시를 없애고 "실행" 글자만 둔다.
+                // 화살표는 여전히 오늘 횟수를 바꾸고, 그 결과는 누적 숫자로 보인다.
                 const Text(
-                  '오늘 실행',
+                  '실행',
                   style: TextStyle(color: Colors.white70, fontSize: 13),
                 ),
                 const SizedBox(width: 10),
-                count,
-                const SizedBox(width: 14),
                 cumulativeCount,
                 const SizedBox(width: 6),
                 _arrowButton(

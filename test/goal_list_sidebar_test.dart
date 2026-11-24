@@ -31,8 +31,10 @@ void main() {
       ),
     );
 
-    expect(find.text('오늘 실행'), findsOneWidget);
-    expect(find.text('0'), findsOneWidget);
+    // 2026-11-24: "오늘 실행 N" 대신 "실행" 글자만 보인다
+    expect(find.text('실행'), findsOneWidget);
+    expect(find.text('오늘 실행'), findsNothing);
+    expect(find.text('0'), findsNothing);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.byTooltip('오늘 실행 횟수 늘리기'));
@@ -42,7 +44,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('오늘 실행은 한 자리로 표시되고 화살표로 변경된다', (WidgetTester tester) async {
+  testWidgets('실행 글자만 보이고 화살표는 누적을 바꾼다', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -69,8 +71,7 @@ void main() {
       ),
     );
 
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('00'), findsNothing);
+    expect(find.text('누적 0', findRichText: true), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     for (final width in [768.0, 1280.0]) {
@@ -82,15 +83,8 @@ void main() {
     await tester.tap(find.byTooltip('오늘 실행 횟수 늘리기'));
     await tester.pump();
 
-    expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is Text &&
-            widget.data == '1' &&
-            widget.style?.color == Colors.amberAccent,
-      ),
-      findsOneWidget,
-    );
+    // 오늘 숫자는 보이지 않고, 화살표 결과는 누적에 반영된다
+    expect(find.text('누적 1', findRichText: true), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
