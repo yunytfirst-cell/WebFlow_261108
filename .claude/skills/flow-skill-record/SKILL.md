@@ -28,6 +28,9 @@ description: Flow 프로젝트에서 skill(.claude/skills) 기록 규칙과 자�
   4. **두 리스트 함께**: 끝장·알아차림 리스트는 한쪽만 말해도 둘 다 같은 방식으로(flow-list-sidebars §6).
   5. **검토 절차 생략 금지**: `flutter analyze lib test`(기존 경고 8개만), `flutter test` 통과, 바꾼 파일만 `dart format`(포맷 안 된 top_bar·ticker는 format 금지), 버전·CHANGELOG·태그, skill 기록, 커밋·push, 앱 실행. "빠르게"라도 이 단계는 빼지 않는다.
   6. **주석·문구는 한국어**, 주석은 "왜"를 적는다. `withOpacity` 대신 `withValues(alpha:)`.
+  7. **코드 크기 최적화** (2026-11-25 사용자 지시 "모듈화, 코드사이즈 최적화, 실행속도 최적화 점검"): 같은 코드를 늘리지 않는다(두 번 쓰면 함수·공용 위젯으로). 쓰지 않게 된 코드·import·주석 처리된 옛 코드·임시 디버그 출력(`debugPrint('DBG`)은 그 작업에서 지운다. 임시 측정 파일(`test/_tmp/`)은 커밋 전에 지운다. 에셋은 필요한 크기로(예: 과녁 PNG는 바깥 여백을 잘라 정사각형 222px). 새 패키지는 꼭 필요할 때만(이유를 skill에 적음, 예: `integration_test`는 실제 앱 픽셀 검사용 dev 의존성).
+  8. **실행 속도 최적화** (같은 지시): 매 프레임·매 build마다 무거운 일을 하지 않는다 — 텍스트 측정(`TextPainter`)·파일 읽기·목록 다시 만들기는 값이 바뀔 때만(예: TopBar `_flattenedLines` 캐시, `_measureIconsRow`는 0.5px 넘게 바뀔 때만 setState). 애니메이션은 바뀌는 부분만 다시 그린다(`TweenAnimationBuilder`·`ListenableBuilder` 범위를 좁게). 바뀌지 않는 위젯은 `const`. 파일 IO는 `async`로, 연속 쓰기는 순서대로 묶는다(`_foldWrite = _foldWrite.then(...)`). `setState`는 필요한 위젯 범위에서만.
+- **점검 시점**: 코드를 고친 작업마다 커밋 전에 `git diff`를 보며 7·8번을 확인한다(중복 코드, 남은 디버그·임시 파일, build 안의 무거운 계산, 불필요한 setState). 문제를 찾으면 그 작업 안에서 고치고, 답변의 방법 검토 줄에 `규칙 OK`로 표시한다. 큰 정리(기존 코드 전체 최적화)는 사용자가 요청할 때 따로 한다.
 - 이 목록에 없는 규칙은 해당 작업의 SKILL.md(표 참고: CLAUDE.md Skills)가 정한다. 시작 전에 그 SKILL.md를 grep해 관련 줄을 확인한다.
 
 ## 무엇을 저장하나
