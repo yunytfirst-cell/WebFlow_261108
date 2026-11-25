@@ -41,12 +41,20 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 
 - `GoalTitleDisplay`: 높이 `fontSize * 1.5`(티커 줄 높이와 같음), 패딩 없음, Row `start`·`max`, `목표: `·입력 글·힌트 모두 `fontSize`(예전 0.9/0.85 배율 없앰), 굵게.
 - `TopBarTicker` 글 영역 Container `alignment: centerLeft`(예전 center라 짧은 `ITEM FINISH`가 가운데에 있었음).
-- 두 바 모두 `left: _barLeft, width: _barWidth`, 같은 `tickerFontSize`. 테스트가 크기·글자 크기·글자 시작 x(`목표: ` vs `ITEM FINISH`)가 같은지 본다.
+- 두 바 모두 `left: _barLeft, width: _barWidth`, 같은 `tickerFontSize`. 테스트가 크기가 같은지 본다(2026-11-25부터 ITEM FINISH는 가운데 깃발 아이콘이라 글자 시작 x 비교는 없앰).
 
 ## STEP > 박스 글자 (2026-11-25 사용자 지시)
 
 - 티커 글자(`ITEM FINISH`, `STEP > n. …`)는 목표 박스 글자의 **2/3** (`TopBarTicker.textScale`). 박스 높이·itemExtent·위아래 버튼 크기는 `fontSize` 기준 그대로라 STEP 박스 위치·크기는 그대로다.
 - 그래서 "목표 바와 ITEM FINISH 글자 크기 같음" 규칙은 이제 "ITEM FINISH = 목표 × 2/3"이다. 크기·글자 시작 x는 여전히 같다. 테스트가 둘 다 검사한다.
+
+## ITEM FINISH = 깃발 아이콘 (2026-11-25 사용자 지시, 첨부 이미지 "엇갈린 체크무늬 깃발 + FINISH")
+
+- 티커가 `showInitialMessage`일 때(끝장 리스트에서 🎯로 고른 항목이 없거나 그 항목을 끝냄 — 예전 조건 그대로) "ITEM FINISH" 글자 대신 `FinishFlagIcon`(`lib/widgets/finish_flag_icon.dart`)을 **박스 가운데**(Container alignment center, 오른쪽 패딩 0)에 둔다. 항목을 고르면 아이콘이 사라지고 STEP 글이 왼쪽부터 나온다.
+- `FinishFlagIcon(height: viewportHeight*0.95, poleColor: theme.textColor, textColor: theme.accentColor)`, 툴팁 `ITEM FINISH`. 위 72% = 깃발(폭 = 높이×1.5, `CustomPainter`), 아래 = `FINISH`(w900, 자간 2, 깃발 폭의 80%에 FittedBox).
+- 깃발 그리기: 설계 좌표 120×80, 왼쪽 깃대 (50,3)→(74,79) 굵기 4 둥근 끝, 깃발 네 모서리 (50,3)·(62,44)·(6,56)·(1,14)를 쌍선형으로 7×5칸 나눠 흑/백 번갈아 칠하고 흰 테두리 1.5. 오른쪽은 x → 120−x 반전(깃대가 X로 교차).
+- 모양 확인법: 임시 테스트에서 `RepaintBoundary`+`matchesGoldenFile` 후 `--update-goldens`로 PNG를 만들어 Read로 보고 지운다(테스트 글꼴이라 글자는 네모로 보임). 첫 버전은 깃발이 작고 글자가 넓어서 비율을 고쳤다.
+- 테스트: `ITEM FINISH` 글자 없음, `FinishFlagIcon` 하나, 가운데 x가 티커 가운데와 1 이내, 높이 ≤ 티커 높이.
 
 ## 주의
 

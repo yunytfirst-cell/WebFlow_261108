@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'finish_flag_icon.dart';
 import 'dart:async';
 import '../models/design_theme.dart';
 
@@ -59,17 +61,20 @@ class _TopBarTickerState extends State<TopBarTicker> {
           height: viewportHeight,
           width: tickerWidth,
           // 2026-11-24 사용자 지시: 위 목표 표시바와 글자 시작 위치를 같게(왼쪽부터)
-          alignment: Alignment.centerLeft,
+          // 완료 아이콘은 박스 가운데 (2026-11-25 사용자 지시)
+          alignment: widget.showInitialMessage ? Alignment.center : Alignment.centerLeft,
           padding: EdgeInsets.only(
             right: (!widget.showInitialMessage) ? controlButtonsWidth : 0,
           ),
           child: ClipRect(
             child: widget.showInitialMessage
-                ? _TickerMarqueeText(
-                    text: "ITEM FINISH",
-                    fontSize: textSize,
+                // 2026-11-25 사용자 지시: "ITEM FINISH" 글자 대신 첨부 이미지(엇갈린 체크 깃발 + FINISH) 아이콘.
+                // 끝장 리스트에서 항목을 고르면 사라지고 STEP 글이 나온다(예전과 같은 조건).
+                ? FinishFlagIcon(
                     key: const ValueKey("initial_msg"),
-                    color: widget.theme.accentColor,
+                    height: viewportHeight * 0.95,
+                    poleColor: widget.theme.textColor,
+                    textColor: widget.theme.accentColor,
                   )
                 : ListView.builder(
                     controller: widget.scrollController,

@@ -3,6 +3,7 @@ import 'package:flow/widgets/daily_schedule_box.dart';
 import 'package:flow/widgets/goal_title_display.dart';
 import 'package:flow/widgets/top_bar.dart';
 import 'package:flow/widgets/top_bar_ticker.dart';
+import 'package:flow/widgets/finish_flag_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -64,17 +65,25 @@ void main() {
         moreOrLessEquals(settingsRight, epsilon: 1),
       );
     }
-    // 목표 표시바와 ITEM FINISH(티커) 바는 크기·글자 크기·글자 시작 위치가 같다
+    // 목표 표시바와 STEP(티커) 바는 크기가 같다
     final titleSize = tester.getSize(find.byType(GoalTitleDisplay));
     final tickerSize = tester.getSize(find.byType(TopBarTicker));
     expect(titleSize.width, moreOrLessEquals(tickerSize.width, epsilon: 0.5));
     expect(titleSize.height, moreOrLessEquals(tickerSize.height, epsilon: 0.5));
-    final goalLabel = tester.widget<Text>(find.text('목표: '));
-    final finish = tester.widget<Text>(find.text('ITEM FINISH'));
     // 2026-11-25 사용자 지시: STEP > 박스 글자는 목표 박스 글자의 2/3 (박스 크기는 그대로)
+    expect(TopBarTicker.textScale, 2 / 3);
+    // 2026-11-25 사용자 지시: "ITEM FINISH" 글자 대신 깃발 아이콘(FINISH)을 STEP 박스 가운데에
+    expect(find.text('ITEM FINISH'), findsNothing);
+    final flag = find.byType(FinishFlagIcon);
+    expect(flag, findsOneWidget);
+    expect(find.text('FINISH'), findsOneWidget);
     expect(
-      finish.style!.fontSize,
-      moreOrLessEquals(goalLabel.style!.fontSize! * 2 / 3, epsilon: 0.01),
+      tester.getCenter(flag).dx,
+      moreOrLessEquals(tester.getCenter(find.byType(TopBarTicker)).dx, epsilon: 1),
+    );
+    expect(
+      tester.getSize(flag).height,
+      lessThanOrEqualTo(tester.getSize(find.byType(TopBarTicker)).height),
     );
 
     // 2026-11-25 사용자 지시: 아이콘 행~목표 박스 간격을 1/2로(목표 박스를 위로), STEP 박스 위치는 그대로
@@ -89,13 +98,6 @@ void main() {
       lessThanOrEqualTo(rowBottom + 0.5),
     );
     expect(rowBottom, lessThan(goalRect.top));
-    expect(
-      tester.getTopLeft(find.text('목표: ')).dx,
-      moreOrLessEquals(
-        tester.getTopLeft(find.text('ITEM FINISH')).dx,
-        epsilon: 0.5,
-      ),
-    );
 
     // 접어도 + 버튼은 − 버튼이 있던 자리·크기 그대로 (2026-11-24 사용자 지적)
     final toggleRect = tester.getRect(find.byTooltip('컨트롤 접기'));
