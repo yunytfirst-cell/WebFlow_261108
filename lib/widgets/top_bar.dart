@@ -85,6 +85,8 @@ class _TopBarState extends State<TopBar> {
   final GlobalKey _iconsRowKey = GlobalKey();
   double? _barLeft;
   double? _barWidth;
+  // 아이콘 행(FittedBox로 줄어든 실제 모습)의 아래 끝. 목표 박스를 이 아래 간격의 1/2 위치로 올린다.
+  double? _rowBottom;
 
   // 2026-11-24 사용자 지적 "− 누르면 + 버튼 위치가 바뀐다": 예전엔 접을 때 버튼을 트리에서 빼서
   // 행 폭·FittedBox 축소 비율이 달라져 + 위치·크기가 변했다. 이제 숨긴 버튼도 자리를 그대로 차지하게
@@ -108,12 +110,16 @@ class _TopBarState extends State<TopBar> {
     final left = rowBox.localToGlobal(Offset.zero, ancestor: stackBox).dx;
     final right = rowBox.localToGlobal(Offset(rowBox.size.width, 0), ancestor: stackBox).dx;
     final width = right - left;
+    final bottom = rowBox.localToGlobal(Offset(0, rowBox.size.height), ancestor: stackBox).dy;
     if (_barLeft == null ||
         (left - _barLeft!).abs() > 0.5 ||
-        (width - _barWidth!).abs() > 0.5) {
+        (width - _barWidth!).abs() > 0.5 ||
+        _rowBottom == null ||
+        (bottom - _rowBottom!).abs() > 0.5) {
       setState(() {
         _barLeft = left;
         _barWidth = width;
+        _rowBottom = bottom;
       });
     }
   }
@@ -137,6 +143,22 @@ class _TopBarState extends State<TopBar> {
   }
 
   double _getTickerBarHeight() => _getTickerFontSize() * _tickerBarHeightRatio;
+
+  /// 목표 박스의 bottom 값. 예전 자리(티커 바로 위 10)에서 아이콘 행과의 간격을
+  /// 1/2로 줄이도록 위로 올린다 (2026-11-25 사용자 지시 "상단바와 목표 박스 간격 1/2, STEP 박스는 그대로").
+  double _goalTitleBottom(double containerHeight) {
+    final double tickerH = _getTickerBarHeight();
+    final double oldBottom = tickerH + 10;
+    if (_rowBottom == null) return oldBottom;
+    // 목표 박스 높이 = 티커 줄 높이(fontSize * 1.5)
+    final double oldTop = containerHeight - oldBottom - tickerH;
+    final double gap = oldTop - _rowBottom!;
+    if (gap <= 0) return oldBottom;
+    return oldBottom + gap * goalGapRatio;
+  }
+
+  /// 아이콘 행~목표 박스 간격을 줄이는 비율 (줄인 만큼 위로 올림)
+  static const double goalGapRatio = 0.5;
 
   // 하단 아이콘 행의 실측 원본 폭 계산 (확대/축소 시 스케줄 박스가 아이콘 범위를 절대 넘지 않도록 제한)
   double _calculateUnscaledIconsRowWidth(double buttonSize, String modeName) {
@@ -395,7 +417,7 @@ class _TopBarState extends State<TopBar> {
 
               // 2. [별도 파일 관리] 상단 1층: 목표 제목 표시 영역
               Positioned(
-                bottom: _getTickerBarHeight() + 10,
+                bottom: _goalTitleBottom(containerHeight),
                 left: _barLeft ?? (totalAreaWidth - tickerWidth) / 2,
                 width: tickerWidth,
                 child: GoalTitleDisplay(

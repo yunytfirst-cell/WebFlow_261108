@@ -328,4 +328,62 @@ void main() {
     }
     expect(tester.takeException(), isNull);
   });
+
+  // 2026-11-25: 동작 버튼 오른쪽 서식 툴박스(색·크기·굵게·기울임·밑줄·가운데 줄), 두 리스트
+  testWidgets('두 리스트: 서식 툴박스는 버튼 오른쪽에 있고 누른 항목의 글자를 바꾼다', (tester) async {
+    TextStyle itemStyle() => tester
+        .widget<TextField>(
+          find
+              .byWidgetPredicate(
+                (w) => w is TextField && w.keyboardType != TextInputType.number,
+              )
+              .last,
+        )
+        .style!;
+    final goals = [GoalItem(text: '항목')];
+    final items = [AwarenessItem(text: '항목')];
+    for (final build in [
+      () => goalSidebar(goals),
+      () => awarenessSidebar(items),
+    ]) {
+      setWide(tester);
+      await tester.pumpWidget(build());
+      expect(find.byTooltip('기울임'), findsOneWidget);
+      expect(
+        tester.getCenter(find.byTooltip('기울임')).dx,
+        greaterThan(tester.getCenter(find.text('폴더관리')).dx),
+      );
+      // 항목을 누르기 전에는 눌러도 바뀌지 않는다
+      await tester.tap(
+        find.byTooltip('서식을 바꿀 항목을 먼저 누르세요'),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(itemStyle().fontStyle, isNot(FontStyle.italic));
+
+      await tester.tap(find.text('항목').last);
+      await tester.pump();
+      for (final tip in ['굵게', '기울임', '밑줄', '가운데 줄']) {
+        await tester.tap(find.byTooltip(tip));
+        await tester.pump();
+      }
+      await tester.tap(find.byTooltip('글자 색').first);
+      await tester.pump();
+      final style = itemStyle();
+      expect(style.fontWeight, FontWeight.bold);
+      expect(style.fontStyle, FontStyle.italic);
+      expect(style.decoration!.contains(TextDecoration.underline), isTrue);
+      expect(style.decoration!.contains(TextDecoration.lineThrough), isTrue);
+      expect(style.color, const Color(0xFFE6B422));
+
+      await tester.tap(find.byTooltip('글자 크기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('크게').last, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(itemStyle().fontSize, moreOrLessEquals(14 * 1.2));
+    }
+    expect(goals.first.style.italic, isTrue);
+    expect(items.first.style.strike, isTrue);
+    expect(tester.takeException(), isNull);
+  });
 }

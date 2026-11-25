@@ -16,7 +16,7 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
      - 시간 색 칸: `Container(color: accentColor 0.6, 가로 패딩 12, 가운데)` 안에 `FittedBox(Text HH:mm, 20, w900, tabularFigures)`. 시계 아이콘·검은 둥근 박스는 **없다**.
      - 오른쪽 내용: 시간대 라벨·스케줄 글(누르면 편집) → 6 → 닫기(X). 스케줄 아이콘(`schedule_rounded`)은 **없다**(2026-11-24 사용자 지시 "현재시간 우측 아이콘 제거"). 기준 폭 최소 220(`referenceWidth`).
 1. 컨트롤 아이콘 행: top `buttonRowTop = topGap + (박스 있으면 112, 없으면 2)`.
-2. 목표 제목 `GoalTitleDisplay`: bottom `티커 높이 + 10`.
+2. 목표 제목 `GoalTitleDisplay`: bottom `_goalTitleBottom(containerHeight)` (2026-11-25 사용자 지시 "상단바와 목표 박스 간격을 지금의 1/2로, STEP 박스 위치는 바꾸지 말 것"). 예전 자리(bottom `티커 높이 + 10`)에서 아이콘 행 **실제 아래 끝**(`_measureIconsRow`가 재는 `_rowBottom`, FittedBox 축소 반영)까지의 간격 × `goalGapRatio`(0.5)만큼 위로 올린다. 재기 전 첫 프레임·간격이 0 이하면 예전 자리.
 3. 티커 `TopBarTicker`: bottom 2.
 
 ## 컨트롤 아이콘 행 (2026-11-24 사용자 지시)
@@ -43,6 +43,11 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 - `TopBarTicker` 글 영역 Container `alignment: centerLeft`(예전 center라 짧은 `ITEM FINISH`가 가운데에 있었음).
 - 두 바 모두 `left: _barLeft, width: _barWidth`, 같은 `tickerFontSize`. 테스트가 크기·글자 크기·글자 시작 x(`목표: ` vs `ITEM FINISH`)가 같은지 본다.
 
+## STEP > 박스 글자 (2026-11-25 사용자 지시)
+
+- 티커 글자(`ITEM FINISH`, `STEP > n. …`)는 목표 박스 글자의 **2/3** (`TopBarTicker.textScale`). 박스 높이·itemExtent·위아래 버튼 크기는 `fontSize` 기준 그대로라 STEP 박스 위치·크기는 그대로다.
+- 그래서 "목표 바와 ITEM FINISH 글자 크기 같음" 규칙은 이제 "ITEM FINISH = 목표 × 2/3"이다. 크기·글자 시작 x는 여전히 같다. 테스트가 둘 다 검사한다.
+
 ## 주의
 
-- `dart format`은 **바꾼 파일만** 지정한다. `lib/widgets/*.dart`처럼 한꺼번에 돌리면 손대지 않은 14개 파일이 바뀌어 analyze 경고가 늘어난다(2026-11-24 실수, `git checkout`으로 되돌림).
+- `dart format`은 **바꾼 파일만** 지정한다. `lib/widgets/*.dart`처럼 한꺼번에 돌리면 손대지 않은 14개 파일이 바뀌어 analyze 경고가 늘어난다(2026-11-24 실수, `git checkout`으로 되돌림). **top_bar.dart·top_bar_ticker.dart는 원래 포맷되지 않은 파일이라 바꿨어도 `dart format`을 돌리지 않는다** — 2026-11-25에 돌렸더니 파일 전체가 바뀌고 curly_braces 경고 4개가 늘어 `git checkout` 후 고친 부분만 다시 넣었다.

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flow/services/item_text_style.dart';
 import 'package:flow/services/list_file_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -44,7 +45,8 @@ void main() {
   });
 
   test('a list never picks up the other list\'s run counter', () {
-    const content = '[AWARE]: 알아차림\n'
+    const content =
+        '[AWARE]: 알아차림\n'
         '[RUN] 2026-11-12: 7\n'
         '[AWARE_RUN] 2026-11-12: 2\n'
         '[AWARE_ITEM:1]\n항목\n[END_AWARE_ITEM]\n';
@@ -92,7 +94,11 @@ void main() {
     test('열린 파일이 없으면 작업 폴더에 제목 파일명으로', () {
       expect(
         ListFileService.saveTargetPath(
-            currentFilePath: null, directory: 'D:/Docs', fileName: '할일.txt', exists: (_) => false),
+          currentFilePath: null,
+          directory: 'D:/Docs',
+          fileName: '할일.txt',
+          exists: (_) => false,
+        ),
         'D:/Docs/할일.txt',
       );
     });
@@ -100,13 +106,21 @@ void main() {
     test('제목이 열린 파일 이름과 같으면 그 파일에 덮어쓴다 (대소문자 무시)', () {
       expect(
         ListFileService.saveTargetPath(
-            currentFilePath: opened, directory: 'D:/Docs', fileName: '월요일.txt', exists: (_) => true),
+          currentFilePath: opened,
+          directory: 'D:/Docs',
+          fileName: '월요일.txt',
+          exists: (_) => true,
+        ),
         opened,
       );
       final upper = '$folder${sep}Plan.TXT';
       expect(
         ListFileService.saveTargetPath(
-            currentFilePath: upper, directory: 'D:/Docs', fileName: 'plan.txt', exists: (_) => true),
+          currentFilePath: upper,
+          directory: 'D:/Docs',
+          fileName: 'plan.txt',
+          exists: (_) => true,
+        ),
         upper,
       );
     });
@@ -114,7 +128,11 @@ void main() {
     test('제목이 다르면 열린 파일과 같은 폴더에 제목 이름으로 새 파일', () {
       expect(
         ListFileService.saveTargetPath(
-            currentFilePath: opened, directory: 'D:/Docs', fileName: '화요일.txt', exists: (p) => p == opened),
+          currentFilePath: opened,
+          directory: 'D:/Docs',
+          fileName: '화요일.txt',
+          exists: (p) => p == opened,
+        ),
         '$folder$sep화요일.txt',
       );
     });
@@ -123,7 +141,11 @@ void main() {
       final taken = {opened, '$folder$sep화요일.txt', '$folder$sep화요일 (2).txt'};
       expect(
         ListFileService.saveTargetPath(
-            currentFilePath: opened, directory: 'D:/Docs', fileName: '화요일.txt', exists: taken.contains),
+          currentFilePath: opened,
+          directory: 'D:/Docs',
+          fileName: '화요일.txt',
+          exists: taken.contains,
+        ),
         '$folder$sep화요일 (3).txt',
       );
     });
@@ -132,7 +154,11 @@ void main() {
       final numbered = '$folder$sep화요일 (3).txt';
       expect(
         ListFileService.saveTargetPath(
-            currentFilePath: numbered, directory: 'D:/Docs', fileName: '화요일.txt', exists: (_) => true),
+          currentFilePath: numbered,
+          directory: 'D:/Docs',
+          fileName: '화요일.txt',
+          exists: (_) => true,
+        ),
         numbered,
       );
     });
@@ -141,7 +167,11 @@ void main() {
       final special = '$folder${sep}a+b (1).txt';
       expect(
         ListFileService.saveTargetPath(
-            currentFilePath: special, directory: 'D:/Docs', fileName: 'a+b (1).txt', exists: (_) => true),
+          currentFilePath: special,
+          directory: 'D:/Docs',
+          fileName: 'a+b (1).txt',
+          exists: (_) => true,
+        ),
         special,
       );
     });
@@ -151,7 +181,10 @@ void main() {
       addTearDown(() => dir.deleteSync(recursive: true));
       final old = File('${dir.path}$sep월요일.txt')..writeAsStringSync('기존');
       final target = ListFileService.saveTargetPath(
-          currentFilePath: old.path, directory: dir.path, fileName: '화요일.txt');
+        currentFilePath: old.path,
+        directory: dir.path,
+        fileName: '화요일.txt',
+      );
       File(target).writeAsStringSync('새것');
       expect(old.readAsStringSync(), '기존');
       expect(File('${dir.path}$sep화요일.txt').readAsStringSync(), '새것');
@@ -210,4 +243,49 @@ void main() {
     expect(parsed.items, ['항목', '옛 형식']);
     expect(parsed.collapsed, [false, false]);
   });
+
+  // 2026-11-25: 서식 툴박스로 바꾼 글자 서식은 [STYLE] 줄로 저장·복원된다
+  for (final kind in ListFileKind.values) {
+    test('${kind.name} item styles round-trip and survive fold updates', () {
+      const styled = ItemTextStyle(
+        color: 0xE6B422,
+        sizeScale: 1.2,
+        bold: true,
+        italic: true,
+        underline: true,
+        strike: true,
+      );
+      final serialized = ListFileService.serialize(
+        kind: kind,
+        title: '서식',
+        items: ['꾸민 항목', '보통 항목'],
+        runRecords: const {},
+        collapsed: [true, false],
+        styles: [styled, ItemTextStyle.plain],
+      );
+      expect(
+        serialized,
+        contains('[STYLE] color=E6B422;size=1.2;bold;italic;underline;strike'),
+      );
+      // 기본 서식 항목은 [STYLE] 줄이 없다
+      expect('[STYLE]'.allMatches(serialized).length, 1);
+
+      final parsed = ListFileService.parse(serialized, kind: kind);
+      expect(parsed.items, ['꾸민 항목', '보통 항목']);
+      expect(parsed.collapsed, [true, false]);
+      expect(parsed.styles, [styled, ItemTextStyle.plain]);
+
+      final refolded = ListFileService.applyFoldState(
+        serialized,
+        kind: kind,
+        screenItems: [
+          (text: '꾸민 항목', collapsed: false),
+          (text: '보통 항목', collapsed: true),
+        ],
+      );
+      final again = ListFileService.parse(refolded, kind: kind);
+      expect(again.collapsed, [false, true]);
+      expect(again.styles, [styled, ItemTextStyle.plain]);
+    });
+  }
 }

@@ -15,6 +15,9 @@ class TopBarTicker extends StatefulWidget {
   final Function(int) onUpdateIndex;
   final double? maxWidth;
 
+  /// STEP > 박스 글자 크기 = 목표 박스 글자(fontSize)의 2/3 (2026-11-25 사용자 지시)
+  static const double textScale = 2 / 3;
+
   const TopBarTicker({
     super.key,
     required this.lines,
@@ -39,6 +42,9 @@ class _TopBarTickerState extends State<TopBarTicker> {
   Widget build(BuildContext context) {
     // 글자 크기의 1.5배로 고정 높이 지정 (글자 아래 잘림 방지)
     final double viewportHeight = widget.fontSize * 1.5;
+    // 2026-11-25 사용자 지시: STEP > 박스 안 글자는 위 목표 박스 글자의 2/3 크기.
+    // 박스 높이(viewportHeight)는 fontSize 기준 그대로 두어 박스 위치·크기는 바뀌지 않는다.
+    final double textSize = widget.fontSize * TopBarTicker.textScale;
     final double tickerWidth = widget.maxWidth != null
         ? (widget.maxWidth! - 120).clamp(180.0, 700.0).floorToDouble()
         : widget.columnWidth;
@@ -61,7 +67,7 @@ class _TopBarTickerState extends State<TopBarTicker> {
             child: widget.showInitialMessage
                 ? _TickerMarqueeText(
                     text: "ITEM FINISH",
-                    fontSize: widget.fontSize,
+                    fontSize: textSize,
                     key: const ValueKey("initial_msg"),
                     color: widget.theme.accentColor,
                   )
@@ -85,14 +91,14 @@ class _TopBarTickerState extends State<TopBarTicker> {
                         child: isSelected
                             ? _TickerMarqueeText(
                                 text: fullText,
-                                fontSize: widget.fontSize,
+                                fontSize: textSize,
                                 key: ValueKey("${line['mainIdx']}-${line['subIdx']}"),
                                 color: widget.theme.accentColor,
                               )
                             : Text(
                                 fullText,
                                 style: TextStyle(
-                                  fontSize: widget.fontSize,
+                                  fontSize: textSize,
                                   height: 1.0,
                                   color: widget.theme.textColor.withValues(alpha: 0.45),
                                 ),

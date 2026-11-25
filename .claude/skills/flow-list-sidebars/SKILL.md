@@ -20,7 +20,7 @@ description: Flow 앱의 "성공의 열쇠(끝장 리스트, GoalListSidebar)"�
    기존 경고(main.dart의 `curly_braces_in_flow_control_structures`)만 남아야 한다(8개. goal_title_display.dart의 `viewportHeight` 경고는 2026-11-24에 없어짐).
 4. **저장**: 규칙·규격이 바뀌었으면 이 문서를 갱신하고, `reference/` 사본을 lib의 현재 파일로 다시 복사한다.
    ```
-   cp lib/services/list_file_service.dart lib/services/run_counter_service.dart lib/widgets/run_counter_panel.dart .claude/skills/flow-list-sidebars/reference/
+   cp lib/services/list_file_service.dart lib/services/run_counter_service.dart lib/widgets/run_counter_panel.dart lib/services/item_text_style.dart .claude/skills/flow-list-sidebars/reference/
    ```
    Stop 훅(`.claude/hooks/list-sidebar-guard.sh`)이 테스트 실패, 사본 불일치, 문서 미갱신을 자동으로 잡는다.
 
@@ -103,7 +103,10 @@ final Function(String?) onLoadDirectoryChanged;
   - 오늘 횟수 숫자와 `오늘 실행` 글자는 **화면에 보이지 않는다**("'오늘 실행 1' 삭제하고 '실행' 글자로 변경"). 화살표는 오늘 횟수(0~99)를 바꾸고 결과는 누적 숫자로 보인다. 파일의 `[RUN] 날짜: n` 기록은 그대로.
   - 위젯 안에 LayoutBuilder·margin·FittedBox가 없다. 폭 맞춤은 부모(사이드바 제목 줄)의 FittedBox가 한다. 전달받은 Map만 수정한다.
 
-처음부터 만들 때는 이 세 파일을 사본 그대로 쓴다.
+- `reference/item_text_style.dart` (2026-11-25): 항목 글자 서식 `ItemTextStyle`(color RGB|null=흰색, sizeScale, bold, italic, underline, strike), `plain`, `palette`(E6B422 노랑·5CB85C 초록·E88AC4 분홍·A97FE0 보라·5BC0EB 하늘·9E9E9E 회색), `sizeSteps` 0.85/1.0/1.2/1.5(`작게/보통/크게/아주 크게`), `apply(base)`, `toLine()`/`parseLine()`.
+  - 파일 형식: 항목 블록 머리 다음(`[FOLDED]`가 있으면 그 다음) 줄 `[STYLE] color=E6B422;size=1.2;bold;italic;underline;strike`. 기본 서식이면 줄을 쓰지 않는다(예전 파일 그대로 읽힘). `ListFileData.styles`, `serialize(styles:)`, `applyFoldState`는 디스크 서식을 그대로 보존한다.
+
+처음부터 만들 때는 이 네 파일을 사본 그대로 쓴다.
 
 ## 5. 사이드바 화면 규격 (두 위젯 공통)
 
@@ -113,6 +116,10 @@ final Function(String?) onLoadDirectoryChanged;
 - 위에서부터: 제목 줄 → 제목 입력칸(orangeAccent, 굵게) → 버튼 `Wrap`(간격 8, 가운데) → `SizedBox(6)` → `Divider(white24, indent 20)` → 항목 `ListView`.
 - **제목 줄** (2026-11-24 사용자 지시 "실행누적 박스를 슬라이드 제목 앞으로, 오토레이아웃"): 끝장 `[Expanded(Center(FittedBox(scaleDown, Row[RunCounterPanel, SizedBox(10), 제목]))), 닫기(X)]`, 알아차림 `[닫기(X), Expanded(같은 묶음)]`. 실행 박스와 제목을 **한 FittedBox로 묶어** 좁으면 함께 줄어든다. 예전 반대편 균형용 `SizedBox(40)`은 없앴다. 제목 글자 크기 `(짧은 변 * 0.03).clamp(11, 18)`.
 - 버튼 순서와 색: 새로만들기(`Icons.note_add`, purpleAccent) · 저장(`Icons.save`, blueAccent) · 불러오기(`Icons.file_open`, greenAccent) · 폴더관리(`Icons.folder`, orangeAccent). `ElevatedButton.icon`, 배경 `color.withValues(alpha: 0.3)`, 아이콘 14, 글자 12 흰색, 모서리 8.
+- **서식 툴박스** (2026-11-25 사용자 지시 "컬러·글자크기·중앙줄·언더바·기울기 툴박스를 첨부 이미지 2개 참조, 위치는 우측", 두 리스트 동일): 동작 버튼 줄을 `Row[ Expanded(버튼 Wrap), SizedBox(8), SizedBox(width: (160*_uiScale).clamp(0, (currentWidth-20)*0.3), FittedBox(scaleDown, centerRight, TextFormatToolbox)) ]`로 만든다. 폭을 30% 이하로 묶는 이유: flex 3:2로 나누면 기본 폭에서 버튼 4개가 두 줄로 밀린다.
+  - `lib/widgets/text_format_toolbox.dart` `TextFormatToolbox(style, onChanged, scale)`: 위 줄 색 칸 22×22(팔레트 6색 + 진회색 444444=기본 흰색, 고른 칸에 검은 ✓, 툴팁 `글자 색`/`기본 색(흰색)`), 아래 어두운 둥근 판(2B2B2B, 모서리 8, white12 테두리)에 `B`(굵게) · `format_italic`(기울임) · `format_underlined`(밑줄) · `format_strikethrough`(가운데 줄) · `format_size`(글자 크기, `PopupMenuButton`+`CheckedPopupMenuItem`). 켜진 버튼은 white 0.18 배경. 첨부 이미지의 목록(≡) 아이콘은 요청 기능이 아니라 넣지 않았다.
+  - 대상 항목: 상태 `_styleTarget`(항목 **객체**, 순번 이동에도 따라감). 항목 TextField `onTap`과 접힌 글 누르기에서 정한다. 대상 항목 박스 테두리는 끝장 blueAccent / 알아차림 orangeAccent alpha 0.6, 나머지는 white10. 대상이 없으면 툴박스 opacity 0.45·눌리지 않음·툴팁 `서식을 바꿀 항목을 먼저 누르세요`. 새로만들기·불러오기는 `_styleTarget = null`, 대상 항목을 지우면 null.
+  - 항목 클래스 `ItemTextStyle style = ItemTextStyle.plain`. `_buildItemText`의 textStyle = `style.apply(TextStyle(white, _sz(14)))`(한 줄 넘는지 계산에도 같은 스타일). 저장 버튼 `styles:`, 불러오기 `..style = data.styles[i]`. 서식은 **저장 버튼으로 파일에 남는다**(접기처럼 즉시 쓰지 않음).
 - 패널을 누르면(`Listener.onPointerDown`) `onBringToFront`로 위에 올린다.
 
 ### 항목 박스 (`_buildBubbleItem`, 두 위젯 동일 — 2026-11-20 사용자 지시)
@@ -151,7 +158,9 @@ final Function(String?) onLoadDirectoryChanged;
 
 - `test/list_file_service_test.dart`: 종류별 왕복, 접힘 `[FOLDED]` 왕복·`applyFoldState`(디스크 제목/항목/카운터 유지)·예전 파일은 펼침, 폴더·카운터 줄 분리, 다른 리스트 카운터 무시, 예전 번호 형식 읽기, `pickerInitialDirectory` 정규화, `saveTargetPath`(같은 제목 덮어쓰기·다른 제목 새 파일·번호 붙이기·번호 붙은 파일 인정·특수문자·실제 파일 유지).
 - `test/run_counter_service_test.dart`: 줄 생성/읽기, 일반 줄 무시, 접두어가 다른 줄 무시, `todayKey`.
+- `test/list_file_service_test.dart` (2026-11-25): 두 리스트 `[STYLE]` 왕복, 기본 서식 항목은 줄 없음, `applyFoldState` 후 서식 유지.
 - `test/fold_persist_test.dart`: 저장 없이 접기/펼치기 → 다른 파일 → 다시 열기 상태 유지(두 리스트, 실제 파일).
 - `test/goal_list_sidebar_test.dart`: 알아차림 사이드바는 전달받은 카운터만 바꾼다, `실행` 글자만 보이고 오늘 숫자 없음·화살표가 `누적 N`(findRichText)을 바꿈, 실행 박스는 제목 왼쪽·저장 버튼 위·화살표 세로(누적 오른쪽)·높이 56 미만·360/768 폭 예외 없음, 폭 600 화면(사이드바 288)에서 항목 글자 14 미만·9.8 이상(두 리스트), 360/768/1280 폭에서 예외 없음, 순번 입력+엔터로 이동·범위 밖 번호는 맨 뒤, 긴 항목에만 접기/펼치기 버튼(두 리스트), 도구 줄(more_vert 없음·↑ 접기 왼쪽·+ 오른쪽·버튼 동작, 🎯는 끝장만), 접기 박스(24×20)는 모든 항목에 있고 방향 아이콘(크기 18 — 실행 카운터 화살표와 구분)은 긴 항목에만, 
 - 테스트 추가 요령(2026-11-24): Dart 문자열의 `
 `이 든 코드를 bash heredoc 안 python으로 끼워 넣으면 실제 줄바꿈이 되어 파싱 오류가 난다. 그런 코드는 Edit 도구로 넣는다. 접기 아이콘은 실행 카운터 화살표(크기 20)와 같은 아이콘이므로 찾을 때 `size == 18`로 구분한다.
+- 서식 툴박스(2026-11-25): 두 리스트에서 툴박스가 `폴더관리` 오른쪽, 항목 누르기 전엔 안 바뀜, 누른 뒤 굵게·기울임·밑줄·가운데 줄·색·크기(크게=14×1.2)가 TextField 스타일에 반영, 항목 객체 `style` 변경.

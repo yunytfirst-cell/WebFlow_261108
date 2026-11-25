@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // 순번 입력칸 숫자만 허용
 import 'package:file_picker/file_picker.dart';
 import '../services/list_file_service.dart';
+import '../services/item_text_style.dart';
 import 'run_counter_panel.dart';
+import 'text_format_toolbox.dart';
 
 /*
 [AwarenessListSidebar]
@@ -15,6 +17,7 @@ import 'run_counter_panel.dart';
 class AwarenessItem {
   String text;
   bool collapsed = false; // 긴 항목 접기 상태 (파일 항목 블록의 [FOLDED] 줄로 저장)
+  ItemTextStyle style = ItemTextStyle.plain; // 글자 서식 (파일 항목 블록의 [STYLE] 줄로 저장)
   final Key id;
   final TextEditingController controller;
 
@@ -65,6 +68,8 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
 
   // 순번 직접 변경: 번호를 눌러 새 순번을 입력하고 엔터/포커스 이동/저장 시 그 위치로 옮긴다
   int? _numberEditIndex;
+  // 서식 툴박스가 바꿀 항목 (마지막으로 누른 항목). 순번이 바뀌어도 따라가도록 객체로 기억한다.
+  AwarenessItem? _styleTarget;
 
   // 2026-11-24 사용자 지시 "텍스트 및 아이콘 오토레이아웃": 사이드바 폭에 따라 글자·아이콘 크기를 함께 줄인다.
   // 폭 480 이상이면 1.0, 좁아질수록 비례해서 최소 0.7까지. build에서 폭을 계산할 때 갱신한다.
@@ -92,6 +97,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
       }
       _items = [AwarenessItem()];
       _numberEditIndex = null;
+      _styleTarget = null;
       _currentFilePath = null;
       widget.runRecords.clear();
     });
@@ -268,6 +274,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
         title: _titleController.text,
         items: _items.map((item) => item.controller.text).toList(),
         collapsed: _items.map((item) => item.collapsed).toList(),
+        styles: _items.map((item) => item.style).toList(),
         runRecords: widget.runRecords,
       );
 
@@ -340,6 +347,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
 
       setState(() {
         _items.clear();
+        _styleTarget = null;
         widget.runRecords
           ..clear()
           ..addAll(data.runRecords);
@@ -350,7 +358,8 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
           _items.add(
             AwarenessItem(text: itemText)
               ..controller.text = itemText
-              ..collapsed = data.collapsed[i],
+              ..collapsed = data.collapsed[i]
+              ..style = data.styles[i],
           );
         }
 
@@ -403,6 +412,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
     final target = int.tryParse(_numberController.text.trim());
     setState(() {
       _numberEditIndex = null;
+      _styleTarget = null;
       if (target != null && from < _items.length) {
         final to = (target - 1).clamp(0, _items.length - 1);
         if (to != from) {
@@ -566,34 +576,60 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.center,
+                        // 2026-11-25 사용자 지시: 동작 버튼 오른쪽에 글자 서식 툴박스
+                        child: Row(
                           children: [
-                            _buildActionButton(
-                              Icons.note_add,
-                              "새로만들기",
-                              _clearAll,
-                              Colors.purpleAccent,
+                            Expanded(
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                alignment: WrapAlignment.center,
+                                children: [
+                                  _buildActionButton(
+                                    Icons.note_add,
+                                    "새로만들기",
+                                    _clearAll,
+                                    Colors.purpleAccent,
+                                  ),
+                                  _buildActionButton(
+                                    Icons.save,
+                                    "저장",
+                                    _saveToFile,
+                                    Colors.blueAccent,
+                                  ),
+                                  _buildActionButton(
+                                    Icons.file_open,
+                                    "불러오기",
+                                    _loadFromFile,
+                                    Colors.greenAccent,
+                                  ),
+                                  _buildActionButton(
+                                    Icons.folder,
+                                    "폴더관리",
+                                    _openStorageFolder,
+                                    Colors.orangeAccent,
+                                  ),
+                                ],
+                              ),
                             ),
-                            _buildActionButton(
-                              Icons.save,
-                              "저장",
-                              _saveToFile,
-                              Colors.blueAccent,
-                            ),
-                            _buildActionButton(
-                              Icons.file_open,
-                              "불러오기",
-                              _loadFromFile,
-                              Colors.greenAccent,
-                            ),
-                            _buildActionButton(
-                              Icons.folder,
-                              "폴더관리",
-                              _openStorageFolder,
-                              Colors.orangeAccent,
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              // 툴박스 폭은 사이드바의 30% 이하 (동작 버튼 4개가 한 줄에 남도록)
+                              width: (160 * _uiScale).clamp(
+                                0.0,
+                                (currentWidth - 20) * 0.3,
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerRight,
+                                child: TextFormatToolbox(
+                                  style: _styleTarget?.style,
+                                  scale: _uiScale,
+                                  onChanged: (next) => setState(
+                                    () => _styleTarget?.style = next,
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -684,7 +720,12 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white10),
+        // 서식 툴박스가 바꿀 항목은 테두리를 강조한다
+        border: Border.all(
+          color: identical(item, _styleTarget)
+              ? Colors.orangeAccent.withValues(alpha: 0.6)
+              : Colors.white10,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -748,7 +789,9 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
   // 항목 내용: 위 도구 줄(왼쪽 ↑↓ · 가운데 접기/펼치기 · 오른쪽 +−) 아래에 글을 둔다 (2026-11-24)
   Widget _buildItemText(AwarenessItem item, int index) {
     // 불러온 항목 글자도 사이드바 폭에 맞춰 함께 줄어든다
-    final textStyle = TextStyle(color: Colors.white, fontSize: _sz(14));
+    final textStyle = item.style.apply(
+      TextStyle(color: Colors.white, fontSize: _sz(14)),
+    );
     return LayoutBuilder(
       builder: (context, constraints) {
         final painter = TextPainter(
@@ -767,7 +810,10 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
             if (collapsed)
               // 접힌 상태: 첫 줄만 보이고, 누르면 펼쳐서 편집한다
               GestureDetector(
-                onTap: () => _setCollapsed(item, false),
+                onTap: () {
+                  setState(() => _styleTarget = item);
+                  _setCollapsed(item, false);
+                },
                 child: SizedBox(
                   width: double.infinity,
                   child: Text(
@@ -781,6 +827,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
             else
               TextField(
                 controller: item.controller,
+                onTap: () => setState(() => _styleTarget = item),
                 onChanged: (val) {
                   // 입력 중 한 줄을 넘으면 접기 버튼이 나타나도록 다시 그린다
                   setState(() => item.text = val);
@@ -920,6 +967,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
       if (mounted) {
         setState(() {
           if (_items.length > 1) {
+            if (identical(_items[index], _styleTarget)) _styleTarget = null;
             _items[index].controller.dispose();
             _items.removeAt(index);
           } else {

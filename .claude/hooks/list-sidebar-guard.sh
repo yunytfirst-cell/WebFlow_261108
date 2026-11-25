@@ -20,7 +20,7 @@ if ! out=$(flutter test test/list_file_service_test.dart test/run_counter_servic
 fi
 
 # 2) reference 사본 일치
-for f in lib/services/list_file_service.dart lib/services/run_counter_service.dart lib/widgets/run_counter_panel.dart; do
+for f in lib/services/list_file_service.dart lib/services/run_counter_service.dart lib/widgets/run_counter_panel.dart lib/services/item_text_style.dart; do
   if ! diff -q --strip-trailing-cr "$f" "$skill/reference/$(basename "$f")" >/dev/null 2>&1; then
     problems="${problems}- $f 가 $skill/reference 사본과 다름: 규격 변경이면 SKILL.md 갱신 후 사본 다시 복사\n"
   fi

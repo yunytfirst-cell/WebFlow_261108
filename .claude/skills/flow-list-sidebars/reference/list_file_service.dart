@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
+import 'item_text_style.dart';
 import 'run_counter_service.dart';
 
 /// 끝장(성공의 열쇠) 리스트와 알아차림 리스트는 구조만 같고,
@@ -39,6 +40,7 @@ class ListFileData {
     required this.items,
     required this.runRecords,
     this.collapsed = const [],
+    this.styles = const [],
   });
 
   final String? title;
@@ -47,6 +49,9 @@ class ListFileData {
 
   /// 항목별 접힘 상태 (items와 같은 길이). 접힌 항목은 파일 블록에 [FOLDED] 줄이 있다.
   final List<bool> collapsed;
+
+  /// 항목별 글자 서식 (items와 같은 길이). 서식 있는 항목은 파일 블록에 [STYLE] 줄이 있다.
+  final List<ItemTextStyle> styles;
 }
 
 class ListFileService {
@@ -132,6 +137,7 @@ class ListFileService {
     required List<String> items,
     required Map<String, int> runRecords,
     List<bool> collapsed = const [],
+    List<ItemTextStyle> styles = const [],
   }) {
     final content = StringBuffer()
       ..writeln('${kind.titleMarker}: $title')
@@ -147,6 +153,9 @@ class ListFileService {
       if (index < collapsed.length && collapsed[index]) {
         content.writeln(foldedMarker);
       }
+      if (index < styles.length && !styles[index].isPlain) {
+        content.writeln(styles[index].toLine());
+      }
       content
         ..writeln(items[index])
         ..writeln('[END_${kind.itemMarker}]');
@@ -157,7 +166,9 @@ class ListFileService {
   static ListFileData parse(String content, {required ListFileKind kind}) {
     final items = <String>[];
     final collapsed = <bool>[];
+    final styles = <ItemTextStyle>[];
     var markedFolded = false;
+    ItemTextStyle? markedStyle;
     final runRecords = <String, int>{};
     String? title;
     String? markedItem;
@@ -168,6 +179,7 @@ class ListFileService {
       if (text.isNotEmpty) {
         items.add(text);
         collapsed.add(false);
+        styles.add(ItemTextStyle.plain);
       }
       legacyItem.clear();
     }
@@ -178,16 +190,23 @@ class ListFileService {
         addLegacyItem();
         markedItem = '';
         markedFolded = false;
+        markedStyle = null;
       } else if (RegExp(r'^\[END_(GOAL|AWARE_ITEM)\]$').hasMatch(trimmedLine) &&
           markedItem != null) {
         items.add(markedItem.trim());
         collapsed.add(markedFolded);
+        styles.add(markedStyle ?? ItemTextStyle.plain);
         markedItem = null;
       } else if (markedItem != null &&
           markedItem.isEmpty &&
           !markedFolded &&
           trimmedLine == foldedMarker) {
         markedFolded = true;
+      } else if (markedItem != null &&
+          markedItem.isEmpty &&
+          markedStyle == null &&
+          ItemTextStyle.parseLine(trimmedLine) != null) {
+        markedStyle = ItemTextStyle.parseLine(trimmedLine);
       } else if (markedItem != null) {
         markedItem = markedItem.isEmpty ? line : '$markedItem\n$line';
       } else {
@@ -214,6 +233,7 @@ class ListFileService {
     if (markedItem != null) {
       items.add(markedItem.trim());
       collapsed.add(markedFolded);
+      styles.add(markedStyle ?? ItemTextStyle.plain);
     } else {
       addLegacyItem();
     }
@@ -223,6 +243,7 @@ class ListFileService {
       items: items,
       runRecords: runRecords,
       collapsed: collapsed,
+      styles: styles,
     );
   }
 
@@ -262,6 +283,7 @@ class ListFileService {
       items: data.items,
       runRecords: data.runRecords,
       collapsed: collapsed,
+      styles: data.styles,
     );
   }
 }

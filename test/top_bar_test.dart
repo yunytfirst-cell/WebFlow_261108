@@ -71,7 +71,24 @@ void main() {
     expect(titleSize.height, moreOrLessEquals(tickerSize.height, epsilon: 0.5));
     final goalLabel = tester.widget<Text>(find.text('목표: '));
     final finish = tester.widget<Text>(find.text('ITEM FINISH'));
-    expect(goalLabel.style!.fontSize, finish.style!.fontSize);
+    // 2026-11-25 사용자 지시: STEP > 박스 글자는 목표 박스 글자의 2/3 (박스 크기는 그대로)
+    expect(
+      finish.style!.fontSize,
+      moreOrLessEquals(goalLabel.style!.fontSize! * 2 / 3, epsilon: 0.01),
+    );
+
+    // 2026-11-25 사용자 지시: 아이콘 행~목표 박스 간격을 1/2로(목표 박스를 위로), STEP 박스 위치는 그대로
+    final tickerRect = tester.getRect(find.byType(TopBarTicker));
+    final goalRect = tester.getRect(find.byType(GoalTitleDisplay));
+    final oldGoalTop = tickerRect.top - 10 - goalRect.height;
+    expect(goalRect.top, lessThan(oldGoalTop - 1));
+    // 옮긴 거리 = 남은 간격 → 아이콘 행 아래 끝 = 2*새 위치 - 예전 위치, 아이콘들은 그 위에 있다
+    final rowBottom = 2 * goalRect.top - oldGoalTop;
+    expect(
+      tester.getBottomLeft(find.byTooltip('설정')).dy,
+      lessThanOrEqualTo(rowBottom + 0.5),
+    );
+    expect(rowBottom, lessThan(goalRect.top));
     expect(
       tester.getTopLeft(find.text('목표: ')).dx,
       moreOrLessEquals(
