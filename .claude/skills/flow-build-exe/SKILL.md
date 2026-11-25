@@ -64,7 +64,7 @@ host=github.com
   (Get-Item dist\Flow.exe).VersionInfo | Select FileVersion, ProductVersion   # pubspec 버전과 같아야 함 (예: 1.2.0+8)
   Start-Process dist\Flow.exe; Get-Process | ? { $_.MainWindowTitle -like 'Flow v*' } | Select Path, MainWindowTitle
   ```
-  단일 exe를 실제로 띄워 창 제목 `Flow v<버전>`이 보이면 성공으로 보고한다. 개발용 `build\...low.exe` 창과 함께 떠 있어도 된다.
+  단일 exe를 실제로 띄워 창 제목 `Flow v<버전>`이 보이면 성공으로 보고한다. 개발용 `build/windows/x64/runner/Release/flow.exe` 창과 함께 떠 있어도 된다.
 - 빌드 기록: v1.2.0+8 → `dist\Flow.exe` 16.4MB, 파일 30개 묶음 (2026-11-21).
 - 빌드 기록: v1.2.2+10 → `dist\Flow.exe` 16.4MB, 파일 30개, 창 제목 `Flow v1.2.2` 확인 (2026-11-21).
 - 빌드 기록: v1.3.8+23 → 새 노란 아이콘, `dist\Flow.exe` (2026-11-24).
