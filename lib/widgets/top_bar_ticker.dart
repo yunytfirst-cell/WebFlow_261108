@@ -136,11 +136,11 @@ class _TopBarTickerState extends State<TopBarTicker> {
           ),
         ),
 
-        // FINISH 아이콘 (첨부 이미지: 엇갈린 체크 깃발 + FINISH, 박스 높이 × 0.95 × 1.5).
-        // 아래 끝은 박스 아래 끝, 위로 넘친다.
+        // FINISH 아이콘 (첨부 이미지: 엇갈린 체크 깃발 + FINISH, 박스 높이 × 0.95).
+        // 2026-11-25 사용자 지시: 아이콘과 글자는 박스 높이 가운데에 맞춘다.
         Positioned(
           left: iconLeft,
-          bottom: 0,
+          top: (viewportHeight - iconH) / 2,
           width: iconW,
           height: iconH,
           child: FinishFlagIcon(

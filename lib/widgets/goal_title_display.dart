@@ -122,15 +122,20 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
                                 widget.onTitleChanged?.call(val);
                               },
                               textAlign: TextAlign.left,
+                              // 2026-11-25 사용자 지시: 아이콘과 글자를 박스 높이 가운데에 맞춘다.
+                              // 기본 줄 높이(맑은 고딕 약 1.33배)는 글자가 위로 치우쳐 STEP 글처럼 1.0으로 둔다.
+                              textAlignVertical: TextAlignVertical.center,
                               style: TextStyle(
                                 fontSize: widget.fontSize,
                                 fontWeight: FontWeight.bold,
+                                height: 1.0,
                                 color: widget.theme.textColor,
                               ),
                               decoration: InputDecoration(
                                 hintText: "오늘의 스케줄 입력...",
                                 hintStyle: TextStyle(
                                   fontSize: widget.fontSize,
+                                  height: 1.0,
                                   color: widget.theme.textColor.withValues(
                                     alpha: 0.4,
                                   ),

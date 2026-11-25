@@ -89,7 +89,7 @@ void main() {
       flagBox.height,
       moreOrLessEquals(tickerBox.height * 0.95, epsilon: 0.5),
     );
-    expect(flagBox.bottom, moreOrLessEquals(tickerBox.bottom, epsilon: 0.5));
+    expect(flagBox.center.dy, moreOrLessEquals(tickerBox.center.dy, epsilon: 0.5));
     // 커져도 상단 컨트롤 아이콘과 겹치지 않는다
     expect(
       flagBox.top,
@@ -288,6 +288,16 @@ void main() {
     final clipRect = const HorizontalOnlyClipper().getClip(goalRect.size);
     expect(clipRect.top, lessThan(0));
     expect(clipRect.bottom, greaterThan(goalRect.height));
+    await tester.pumpAndSettle();
+    // 2026-11-25 사용자 지시: 아이콘과 표시 글자는 박스 높이 가운데에 맞춘다
+    for (final (icon, text, box) in [
+      (flag, step, ticker),
+      (target, title, goalBox),
+    ]) {
+      final mid = tester.getCenter(box).dy;
+      expect(tester.getCenter(icon).dy, moreOrLessEquals(mid, epsilon: 0.5));
+      expect(tester.getCenter(text).dy, moreOrLessEquals(mid, epsilon: 1));
+    }
     // 끝나면 두 아이콘 모두 왼쪽 끝, 글은 아이콘 오른쪽에 보인다
     expect(tester.getTopLeft(flag).dx,
         moreOrLessEquals(tester.getTopLeft(ticker).dx, epsilon: 1));
