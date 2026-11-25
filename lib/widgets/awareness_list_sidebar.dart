@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // 순번 입력칸 숫자만 허용
 import 'package:file_picker/file_picker.dart';
 import '../services/list_file_service.dart';
-import '../services/item_text_style.dart';
 import 'run_counter_panel.dart';
+import 'styled_text_controller.dart';
 import 'text_format_toolbox.dart';
 
 /*
@@ -17,13 +17,13 @@ import 'text_format_toolbox.dart';
 class AwarenessItem {
   String text;
   bool collapsed = false; // 긴 항목 접기 상태 (파일 항목 블록의 [FOLDED] 줄로 저장)
-  ItemTextStyle style = ItemTextStyle.plain; // 글자 서식 (파일 항목 블록의 [STYLE] 줄로 저장)
   final Key id;
-  final TextEditingController controller;
+  // 글자마다 서식을 기억한다 (파일 항목 블록의 [SPAN] 줄로 저장)
+  final StyledTextController controller;
 
   AwarenessItem({this.text = ""})
     : id = UniqueKey(),
-      controller = TextEditingController(text: text);
+      controller = StyledTextController(text: text);
 }
 
 class AwarenessListSidebar extends StatefulWidget {
@@ -68,6 +68,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
 
   // 순번 직접 변경: 번호를 눌러 새 순번을 입력하고 엔터/포커스 이동/저장 시 그 위치로 옮긴다
   int? _numberEditIndex;
+  static final Listenable _noTarget = ValueNotifier<int>(0);
   // 서식 툴박스가 바꿀 항목 (마지막으로 누른 항목). 순번이 바뀌어도 따라가도록 객체로 기억한다.
   AwarenessItem? _styleTarget;
 
@@ -274,7 +275,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
         title: _titleController.text,
         items: _items.map((item) => item.controller.text).toList(),
         collapsed: _items.map((item) => item.collapsed).toList(),
-        styles: _items.map((item) => item.style).toList(),
+        spans: _items.map((item) => item.controller.spans).toList(),
         runRecords: widget.runRecords,
       );
 
@@ -359,7 +360,7 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
             AwarenessItem(text: itemText)
               ..controller.text = itemText
               ..collapsed = data.collapsed[i]
-              ..style = data.styles[i],
+              ..controller.spans = data.spans[i],
           );
         }
 
@@ -622,11 +623,24 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerRight,
-                                child: TextFormatToolbox(
-                                  style: _styleTarget?.style,
-                                  scale: _uiScale,
-                                  onChanged: (next) => setState(
-                                    () => _styleTarget?.style = next,
+                                // 툴박스를 눌러도 항목 입력칸의 포커스·선택이 풀리지 않게 한다
+                                child: TextFieldTapRegion(
+                                  child: ListenableBuilder(
+                                    // 글자 선택이 바뀌면 툴박스 상태(켜짐·지금 서식)를 다시 그린다
+                                    listenable:
+                                        _styleTarget?.controller ?? _noTarget,
+                                    builder: (context, _) => TextFormatToolbox(
+                                      style: _styleTarget?.controller
+                                          .styleAtRange(),
+                                      scale: _uiScale,
+                                      onChanged: (edit) {
+                                        final changed =
+                                            _styleTarget?.controller
+                                                .applyToRange(edit) ??
+                                            false;
+                                        if (changed) setState(() {});
+                                      },
+                                    ),
                                   ),
                                 ),
                               ),
@@ -789,13 +803,12 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
   // 항목 내용: 위 도구 줄(왼쪽 ↑↓ · 가운데 접기/펼치기 · 오른쪽 +−) 아래에 글을 둔다 (2026-11-24)
   Widget _buildItemText(AwarenessItem item, int index) {
     // 불러온 항목 글자도 사이드바 폭에 맞춰 함께 줄어든다
-    final textStyle = item.style.apply(
-      TextStyle(color: Colors.white, fontSize: _sz(14)),
-    );
+    // 글자별 서식은 컨트롤러가 입힌다 (선택한 글자만 바뀜)
+    final textStyle = TextStyle(color: Colors.white, fontSize: _sz(14));
     return LayoutBuilder(
       builder: (context, constraints) {
         final painter = TextPainter(
-          text: TextSpan(text: item.controller.text, style: textStyle),
+          text: item.controller.styledSpan(textStyle),
           textDirection: TextDirection.ltr,
           maxLines: 1,
         )..layout(maxWidth: constraints.maxWidth);
@@ -816,30 +829,40 @@ class _AwarenessListSidebarState extends State<AwarenessListSidebar> {
                 },
                 child: SizedBox(
                   width: double.infinity,
-                  child: Text(
-                    item.controller.text.replaceAll('\n', ' '),
+                  child: Text.rich(
+                    item.controller.styledSpan(
+                      textStyle,
+                      displayText: item.controller.text.replaceAll('\n', ' '),
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: textStyle,
                   ),
                 ),
               )
             else
-              TextField(
-                controller: item.controller,
-                onTap: () => setState(() => _styleTarget = item),
-                onChanged: (val) {
-                  // 입력 중 한 줄을 넘으면 접기 버튼이 나타나도록 다시 그린다
-                  setState(() => item.text = val);
-                  widget.onItemsChanged(_items);
+              // 포커스를 받으면(클릭·드래그 선택) 서식 툴박스 대상이 된다
+              Focus(
+                onFocusChange: (focused) {
+                  if (focused && !identical(_styleTarget, item)) {
+                    setState(() => _styleTarget = item);
+                  }
                 },
-                maxLines: null,
-                style: textStyle,
-                decoration: const InputDecoration(
-                  hintText: "내용 입력...",
-                  hintStyle: TextStyle(color: Colors.white38),
-                  border: InputBorder.none,
-                  isDense: true,
+                child: TextField(
+                  controller: item.controller,
+                  onTap: () => setState(() => _styleTarget = item),
+                  onChanged: (val) {
+                    // 입력 중 한 줄을 넘으면 접기 버튼이 나타나도록 다시 그린다
+                    setState(() => item.text = val);
+                    widget.onItemsChanged(_items);
+                  },
+                  maxLines: null,
+                  style: textStyle,
+                  decoration: const InputDecoration(
+                    hintText: "내용 입력...",
+                    hintStyle: TextStyle(color: Colors.white38),
+                    border: InputBorder.none,
+                    isDense: true,
+                  ),
                 ),
               ),
           ],

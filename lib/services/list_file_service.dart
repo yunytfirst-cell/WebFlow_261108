@@ -40,7 +40,7 @@ class ListFileData {
     required this.items,
     required this.runRecords,
     this.collapsed = const [],
-    this.styles = const [],
+    this.spans = const [],
   });
 
   final String? title;
@@ -50,8 +50,8 @@ class ListFileData {
   /// 항목별 접힘 상태 (items와 같은 길이). 접힌 항목은 파일 블록에 [FOLDED] 줄이 있다.
   final List<bool> collapsed;
 
-  /// 항목별 글자 서식 (items와 같은 길이). 서식 있는 항목은 파일 블록에 [STYLE] 줄이 있다.
-  final List<ItemTextStyle> styles;
+  /// 항목별 글자 서식 구간 (items와 같은 길이). 서식 있는 구간마다 파일 블록에 [SPAN] 줄이 있다.
+  final List<List<StyleSpan>> spans;
 }
 
 class ListFileService {
@@ -105,7 +105,9 @@ class ListFileService {
     final folder = currentFilePath == null
         ? directory
         : currentFilePath.substring(
-            0, currentFilePath.length - _baseName(currentFilePath).length - 1);
+            0,
+            currentFilePath.length - _baseName(currentFilePath).length - 1,
+          );
     // 열린 파일이 없을 때 경로 조합은 기존 방식('$path/$fileName')을 유지한다
     final sep = currentFilePath == null ? '/' : Platform.pathSeparator;
     var candidate = '$folder$sep$fileName';
@@ -118,14 +120,16 @@ class ListFileService {
 
   static String _baseName(String path) => path.split(RegExp(r'[/\\]')).last;
 
-  static String _stem(String fileName) => fileName.toLowerCase().endsWith('.txt')
+  static String _stem(String fileName) =>
+      fileName.toLowerCase().endsWith('.txt')
       ? fileName.substring(0, fileName.length - 4)
       : fileName;
 
   /// `제목.txt`와 `제목 (3).txt`를 같은 제목의 파일로 본다 (Windows처럼 대소문자 무시).
   static bool _sameTitleFile(String existingName, String fileName) {
     final pattern = RegExp(
-      '^${RegExp.escape(_stem(fileName))}' r'( \(\d+\))?\.txt$',
+      '^${RegExp.escape(_stem(fileName))}'
+      r'( \(\d+\))?\.txt$',
       caseSensitive: false,
     );
     return pattern.hasMatch(existingName);
@@ -137,15 +141,12 @@ class ListFileService {
     required List<String> items,
     required Map<String, int> runRecords,
     List<bool> collapsed = const [],
-    List<ItemTextStyle> styles = const [],
+    List<List<StyleSpan>> spans = const [],
   }) {
     final content = StringBuffer()
       ..writeln('${kind.titleMarker}: $title')
       ..write(
-        RunCounterService.toLines(
-          runRecords,
-          linePrefix: kind.runLinePrefix,
-        ),
+        RunCounterService.toLines(runRecords, linePrefix: kind.runLinePrefix),
       );
 
     for (var index = 0; index < items.length; index++) {
@@ -153,8 +154,12 @@ class ListFileService {
       if (index < collapsed.length && collapsed[index]) {
         content.writeln(foldedMarker);
       }
-      if (index < styles.length && !styles[index].isPlain) {
-        content.writeln(styles[index].toLine());
+      if (index < spans.length) {
+        for (final span in spans[index]) {
+          if (!span.style.isPlain && span.end > span.start) {
+            content.writeln(span.toLine());
+          }
+        }
       }
       content
         ..writeln(items[index])
@@ -166,9 +171,24 @@ class ListFileService {
   static ListFileData parse(String content, {required ListFileKind kind}) {
     final items = <String>[];
     final collapsed = <bool>[];
-    final styles = <ItemTextStyle>[];
+    final spans = <List<StyleSpan>>[];
     var markedFolded = false;
-    ItemTextStyle? markedStyle;
+    ItemTextStyle? markedStyle; // 예전 [STYLE] 줄 (항목 전체 서식)
+    var markedSpans = <StyleSpan>[];
+
+    // 항목 글은 앞뒤 공백을 자르므로, 앞에서 잘린 만큼 구간 위치를 당긴다.
+    void addMarkedItem(String raw) {
+      final text = raw.trim();
+      final lead = raw.length - raw.trimLeft().length;
+      items.add(text);
+      collapsed.add(markedFolded);
+      spans.add([
+        if (markedStyle != null) StyleSpan(0, text.length, markedStyle),
+        for (final span in markedSpans)
+          if (span.end - lead > 0) span.shift(-lead),
+      ]);
+    }
+
     final runRecords = <String, int>{};
     String? title;
     String? markedItem;
@@ -179,7 +199,7 @@ class ListFileService {
       if (text.isNotEmpty) {
         items.add(text);
         collapsed.add(false);
-        styles.add(ItemTextStyle.plain);
+        spans.add(const []);
       }
       legacyItem.clear();
     }
@@ -191,11 +211,10 @@ class ListFileService {
         markedItem = '';
         markedFolded = false;
         markedStyle = null;
+        markedSpans = <StyleSpan>[];
       } else if (RegExp(r'^\[END_(GOAL|AWARE_ITEM)\]$').hasMatch(trimmedLine) &&
           markedItem != null) {
-        items.add(markedItem.trim());
-        collapsed.add(markedFolded);
-        styles.add(markedStyle ?? ItemTextStyle.plain);
+        addMarkedItem(markedItem);
         markedItem = null;
       } else if (markedItem != null &&
           markedItem.isEmpty &&
@@ -207,6 +226,10 @@ class ListFileService {
           markedStyle == null &&
           ItemTextStyle.parseLine(trimmedLine) != null) {
         markedStyle = ItemTextStyle.parseLine(trimmedLine);
+      } else if (markedItem != null &&
+          markedItem.isEmpty &&
+          StyleSpan.parseLine(trimmedLine) != null) {
+        markedSpans.add(StyleSpan.parseLine(trimmedLine)!);
       } else if (markedItem != null) {
         markedItem = markedItem.isEmpty ? line : '$markedItem\n$line';
       } else {
@@ -231,9 +254,7 @@ class ListFileService {
     }
 
     if (markedItem != null) {
-      items.add(markedItem.trim());
-      collapsed.add(markedFolded);
-      styles.add(markedStyle ?? ItemTextStyle.plain);
+      addMarkedItem(markedItem);
     } else {
       addLegacyItem();
     }
@@ -243,7 +264,7 @@ class ListFileService {
       items: items,
       runRecords: runRecords,
       collapsed: collapsed,
-      styles: styles,
+      spans: spans,
     );
   }
 
@@ -283,7 +304,7 @@ class ListFileService {
       items: data.items,
       runRecords: data.runRecords,
       collapsed: collapsed,
-      styles: data.styles,
+      spans: data.spans,
     );
   }
 }

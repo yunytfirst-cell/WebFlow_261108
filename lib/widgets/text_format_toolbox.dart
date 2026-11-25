@@ -5,7 +5,7 @@ import '../services/item_text_style.dart';
 /// 끝장·알아차림 리스트 상단 오른쪽의 글자 서식 툴박스 (2026-11-25 사용자 지시, 첨부 이미지 2개 참조).
 /// 위: 색 칸 줄(노랑·초록·분홍·보라·하늘·회색·진회색=기본 흰색, 고른 칸에 ✓)
 /// 아래: 어두운 둥근 판에 B · I · U · ab(가운데 줄) · 글자 크기(메뉴).
-/// [style]이 null이면(서식을 바꿀 항목을 아직 누르지 않음) 흐리게 보이고 눌리지 않는다.
+/// [style]은 선택한 글자(첫 글자)의 서식. null이면(글자를 선택하지 않음) 목록이 흐리게 보이고 눌리지 않는다.
 /// 2026-11-25 사용자 지시 "컬러 리스트, 글자 편집 리스트 아이콘 버튼을 만들어서 숨겨라":
 /// 평소에는 아이콘 버튼 2개(🎨 글자 색 목록, T 글자 편집 목록)만 보이고, 누르면 그 목록이 아래에 펼쳐진다.
 /// 다시 누르면 숨는다. 두 목록은 따로 열고 닫는다(처음엔 둘 다 숨김).
@@ -18,7 +18,9 @@ class TextFormatToolbox extends StatefulWidget {
   });
 
   final ItemTextStyle? style;
-  final ValueChanged<ItemTextStyle> onChanged;
+
+  /// 고른 글자 하나하나에 적용할 서식 변경 (2026-11-25: 선택한 글자만 바꾼다)
+  final ValueChanged<ItemTextStyle Function(ItemTextStyle)> onChanged;
   final double scale;
 
   @override
@@ -48,7 +50,7 @@ class _TextFormatToolboxState extends State<TextFormatToolbox> {
         message: rgb == null ? '기본 색(흰색)' : '글자 색',
         child: InkWell(
           onTap: enabled
-              ? () => onChanged(current.copyWith(color: () => rgb))
+              ? () => onChanged((s) => s.copyWith(color: () => rgb))
               : null,
           child: Container(
             width: cell,
@@ -63,7 +65,12 @@ class _TextFormatToolboxState extends State<TextFormatToolbox> {
       );
     }
 
-    Widget toggle(String tooltip, Widget child, bool on, ItemTextStyle next) {
+    Widget toggle(
+      String tooltip,
+      Widget child,
+      bool on,
+      ItemTextStyle Function(ItemTextStyle) next,
+    ) {
       return Tooltip(
         message: tooltip,
         child: InkWell(
@@ -125,7 +132,7 @@ class _TextFormatToolboxState extends State<TextFormatToolbox> {
     Widget disabledHint(Widget panel) {
       final dimmed = Opacity(opacity: enabled ? 1.0 : 0.45, child: panel);
       if (enabled) return dimmed;
-      return Tooltip(message: '서식을 바꿀 항목을 먼저 누르세요', child: dimmed);
+      return Tooltip(message: '서식을 바꿀 글자를 먼저 드래그해 선택하세요', child: dimmed);
     }
 
     return Column(
@@ -189,19 +196,19 @@ class _TextFormatToolboxState extends State<TextFormatToolbox> {
                       style: letter.copyWith(fontWeight: FontWeight.w900),
                     ),
                     current.bold,
-                    current.copyWith(bold: !current.bold),
+                    (s) => s.copyWith(bold: !current.bold),
                   ),
                   toggle(
                     '기울임',
                     Icon(Icons.format_italic, size: icon, color: textColor),
                     current.italic,
-                    current.copyWith(italic: !current.italic),
+                    (s) => s.copyWith(italic: !current.italic),
                   ),
                   toggle(
                     '밑줄',
                     Icon(Icons.format_underlined, size: icon, color: textColor),
                     current.underline,
-                    current.copyWith(underline: !current.underline),
+                    (s) => s.copyWith(underline: !current.underline),
                   ),
                   toggle(
                     '가운데 줄',
@@ -211,42 +218,23 @@ class _TextFormatToolboxState extends State<TextFormatToolbox> {
                       color: textColor,
                     ),
                     current.strike,
-                    current.copyWith(strike: !current.strike),
+                    (s) => s.copyWith(strike: !current.strike),
                   ),
-                  PopupMenuButton<double>(
-                    tooltip: '글자 크기',
-                    enabled: enabled,
-                    padding: EdgeInsets.zero,
-                    color: const Color(0xFF2B2B2B),
-                    onSelected: (v) =>
-                        onChanged(current.copyWith(sizeScale: v)),
-                    itemBuilder: (context) => [
-                      for (var i = 0; i < ItemTextStyle.sizeSteps.length; i++)
-                        CheckedPopupMenuItem<double>(
-                          value: ItemTextStyle.sizeSteps[i],
-                          checked:
-                              current.sizeScale == ItemTextStyle.sizeSteps[i],
-                          child: Text(
-                            ItemTextStyle.sizeLabels[i],
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                    ],
-                    child: Container(
-                      width: 26 * scale,
-                      height: 24 * scale,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: current.sizeScale != 1.0
-                            ? Colors.white.withValues(alpha: 0.18)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Icon(
-                        Icons.format_size,
-                        size: icon,
-                        color: textColor,
-                      ),
+                  // 글자 크기: 팝업 메뉴는 입력칸 포커스를 빼앗아 글자 선택이 풀리므로 바로 누르는 버튼 2개로 둔다
+                  toggle(
+                    '글자 작게',
+                    Icon(Icons.text_decrease, size: icon, color: textColor),
+                    current.sizeScale < 1.0,
+                    (s) => s.copyWith(
+                      sizeScale: ItemTextStyle.stepSize(current.sizeScale, -1),
+                    ),
+                  ),
+                  toggle(
+                    '글자 크게',
+                    Icon(Icons.text_increase, size: icon, color: textColor),
+                    current.sizeScale > 1.0,
+                    (s) => s.copyWith(
+                      sizeScale: ItemTextStyle.stepSize(current.sizeScale, 1),
                     ),
                   ),
                 ],

@@ -1,8 +1,10 @@
 import 'package:flutter/painting.dart';
 
-/// 리스트 항목 하나의 글자 서식 (2026-11-25 사용자 지시: 끝장·알아차림 리스트 서식 툴박스).
-/// 파일에는 항목 블록 머리 바로 다음 줄에 `[STYLE] color=E6B422;size=1.2;bold;italic;underline;strike`로 저장한다.
-/// 기본 서식(흰색·보통 크기·꾸밈 없음)이면 줄을 쓰지 않아 예전 파일과 같다.
+/// 리스트 항목 글자 서식 한 벌 (2026-11-25 사용자 지시: 끝장·알아차림 리스트 서식 툴박스).
+/// 2026-11-25 사용자 지시 "글자 전체가 아니라 선택한 글자만": 항목의 글자 구간마다 서식을 둔다([StyleSpan]).
+/// 파일에는 항목 블록 머리 다음 줄에 `[SPAN] 0-5 color=E6B422;size=1.2;bold;italic;underline;strike`
+/// (시작-끝 글자 위치, 끝은 포함 안 함)를 구간마다 한 줄씩 쓴다. 서식 없는 항목은 줄이 없어 예전 파일과 같다.
+/// 예전 `[STYLE] …` 줄(항목 전체 서식, v1.4.0~1.4.1)도 읽어서 항목 전체 구간으로 바꾼다.
 class ItemTextStyle {
   const ItemTextStyle({
     this.color,
@@ -41,6 +43,13 @@ class ItemTextStyle {
   static const sizeSteps = <double>[0.85, 1.0, 1.2, 1.5];
   static const sizeLabels = <String>['작게', '보통', '크게', '아주 크게'];
 
+  /// 크기 단계를 [delta]칸 옮긴다 (툴박스 A−/A+). 목록에 없는 값이면 보통에서 시작한다.
+  static double stepSize(double current, int delta) {
+    var i = sizeSteps.indexOf(current);
+    if (i < 0) i = sizeSteps.indexOf(1.0);
+    return sizeSteps[(i + delta).clamp(0, sizeSteps.length - 1)];
+  }
+
   bool get isPlain =>
       color == null &&
       sizeScale == 1.0 &&
@@ -78,7 +87,8 @@ class ItemTextStyle {
     decorationColor: color == null ? base.color : Color(0xFF000000 | color!),
   );
 
-  String toLine() {
+  /// 파일에 쓰는 속성 부분 (`color=E6B422;bold` …)
+  String toAttrs() {
     final parts = <String>[
       if (color != null)
         'color=${color!.toRadixString(16).padLeft(6, '0').toUpperCase()}',
@@ -88,17 +98,23 @@ class ItemTextStyle {
       if (underline) 'underline',
       if (strike) 'strike',
     ];
-    return '$marker ${parts.join(';')}';
+    return parts.join(';');
   }
+
+  String toLine() => '$marker ${toAttrs()}';
 
   /// `[STYLE] ...` 줄을 읽는다. 서식 줄이 아니면 null.
   static ItemTextStyle? parseLine(String line) {
     final trimmed = line.trim();
     if (!trimmed.startsWith(marker)) return null;
+    return parseAttrs(trimmed.substring(marker.length));
+  }
+
+  static ItemTextStyle parseAttrs(String attrs) {
     int? color;
     var size = 1.0;
     var bold = false, italic = false, underline = false, strike = false;
-    for (final raw in trimmed.substring(marker.length).split(';')) {
+    for (final raw in attrs.split(';')) {
       final part = raw.trim();
       if (part.startsWith('color=')) {
         color = int.tryParse(part.substring(6), radix: 16);
@@ -137,4 +153,74 @@ class ItemTextStyle {
   @override
   int get hashCode =>
       Object.hash(color, sizeScale, bold, italic, underline, strike);
+}
+
+/// 항목 글 안의 서식 구간 [start, end) (Dart 문자열 위치 기준)
+class StyleSpan {
+  const StyleSpan(this.start, this.end, this.style);
+
+  static const marker = '[SPAN]';
+
+  final int start;
+  final int end;
+  final ItemTextStyle style;
+
+  String toLine() => '$marker $start-$end ${style.toAttrs()}';
+
+  static final _pattern = RegExp(r'^\[SPAN\] (\d+)-(\d+)(?: (.*))?$');
+
+  static StyleSpan? parseLine(String line) {
+    final m = _pattern.firstMatch(line.trim());
+    if (m == null) return null;
+    return StyleSpan(
+      int.parse(m.group(1)!),
+      int.parse(m.group(2)!),
+      ItemTextStyle.parseAttrs(m.group(3) ?? ''),
+    );
+  }
+
+  StyleSpan shift(int delta) => StyleSpan(start + delta, end + delta, style);
+
+  @override
+  bool operator ==(Object other) =>
+      other is StyleSpan &&
+      other.start == start &&
+      other.end == end &&
+      other.style == style;
+
+  @override
+  int get hashCode => Object.hash(start, end, style);
+
+  @override
+  String toString() => toLine();
+}
+
+/// 글자별 서식 목록 → 같은 서식이 이어지는 구간들 (기본 서식 구간은 뺀다)
+List<StyleSpan> spansFromCharStyles(List<ItemTextStyle> chars) {
+  final spans = <StyleSpan>[];
+  var i = 0;
+  while (i < chars.length) {
+    var j = i + 1;
+    while (j < chars.length && chars[j] == chars[i]) {
+      j++;
+    }
+    if (!chars[i].isPlain) spans.add(StyleSpan(i, j, chars[i]));
+    i = j;
+  }
+  return spans;
+}
+
+/// 구간들 → 글자별 서식 목록 (글 길이 [length]에 맞춰 자른다)
+List<ItemTextStyle> charStylesFromSpans(List<StyleSpan> spans, int length) {
+  final chars = List<ItemTextStyle>.filled(length, ItemTextStyle.plain);
+  for (final span in spans) {
+    for (
+      var k = span.start.clamp(0, length);
+      k < span.end.clamp(0, length);
+      k++
+    ) {
+      chars[k] = span.style;
+    }
+  }
+  return chars;
 }

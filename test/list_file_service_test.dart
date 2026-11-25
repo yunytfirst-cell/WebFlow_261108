@@ -244,48 +244,68 @@ void main() {
     expect(parsed.collapsed, [false, false]);
   });
 
-  // 2026-11-25: 서식 툴박스로 바꾼 글자 서식은 [STYLE] 줄로 저장·복원된다
+  // 2026-11-25: 서식은 선택한 글자 구간마다 [SPAN] 줄로 저장·복원된다
   for (final kind in ListFileKind.values) {
-    test('${kind.name} item styles round-trip and survive fold updates', () {
-      const styled = ItemTextStyle(
-        color: 0xE6B422,
-        sizeScale: 1.2,
-        bold: true,
-        italic: true,
-        underline: true,
-        strike: true,
-      );
-      final serialized = ListFileService.serialize(
-        kind: kind,
-        title: '서식',
-        items: ['꾸민 항목', '보통 항목'],
-        runRecords: const {},
-        collapsed: [true, false],
-        styles: [styled, ItemTextStyle.plain],
-      );
-      expect(
-        serialized,
-        contains('[STYLE] color=E6B422;size=1.2;bold;italic;underline;strike'),
-      );
-      // 기본 서식 항목은 [STYLE] 줄이 없다
-      expect('[STYLE]'.allMatches(serialized).length, 1);
+    test(
+      '${kind.name} item style spans round-trip and survive fold updates',
+      () {
+        const styled = ItemTextStyle(
+          color: 0xE6B422,
+          sizeScale: 1.2,
+          bold: true,
+          italic: true,
+          underline: true,
+          strike: true,
+        );
+        const spans = [
+          StyleSpan(2, 4, styled),
+          StyleSpan(5, 6, ItemTextStyle(bold: true)),
+        ];
+        final serialized = ListFileService.serialize(
+          kind: kind,
+          title: '서식',
+          items: ['꾸민 항목 글', '보통 항목'],
+          runRecords: const {},
+          collapsed: [true, false],
+          spans: [spans, const []],
+        );
+        expect(
+          serialized,
+          contains(
+            '[SPAN] 2-4 color=E6B422;size=1.2;bold;italic;underline;strike',
+          ),
+        );
+        expect(serialized, contains('[SPAN] 5-6 bold'));
+        expect('[SPAN]'.allMatches(serialized).length, 2);
 
-      final parsed = ListFileService.parse(serialized, kind: kind);
-      expect(parsed.items, ['꾸민 항목', '보통 항목']);
-      expect(parsed.collapsed, [true, false]);
-      expect(parsed.styles, [styled, ItemTextStyle.plain]);
+        final parsed = ListFileService.parse(serialized, kind: kind);
+        expect(parsed.items, ['꾸민 항목 글', '보통 항목']);
+        expect(parsed.collapsed, [true, false]);
+        expect(parsed.spans, [spans, const <StyleSpan>[]]);
 
-      final refolded = ListFileService.applyFoldState(
-        serialized,
-        kind: kind,
-        screenItems: [
-          (text: '꾸민 항목', collapsed: false),
-          (text: '보통 항목', collapsed: true),
-        ],
-      );
-      final again = ListFileService.parse(refolded, kind: kind);
-      expect(again.collapsed, [false, true]);
-      expect(again.styles, [styled, ItemTextStyle.plain]);
-    });
+        final refolded = ListFileService.applyFoldState(
+          serialized,
+          kind: kind,
+          screenItems: [
+            (text: '꾸민 항목 글', collapsed: false),
+            (text: '보통 항목', collapsed: true),
+          ],
+        );
+        final again = ListFileService.parse(refolded, kind: kind);
+        expect(again.collapsed, [false, true]);
+        expect(again.spans, [spans, const <StyleSpan>[]]);
+      },
+    );
   }
+
+  test('old whole-item [STYLE] lines load as a span over the whole item', () {
+    final parsed = ListFileService.parse(
+      '[PJT]: 예전\n[GOAL:1]\n[STYLE] italic\n항목글\n[END_GOAL]\n',
+      kind: ListFileKind.goal,
+    );
+    expect(parsed.items, ['항목글']);
+    expect(parsed.spans.first, [
+      const StyleSpan(0, 3, ItemTextStyle(italic: true)),
+    ]);
+  });
 }

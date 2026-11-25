@@ -329,26 +329,18 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  // 2026-11-25: 동작 버튼 오른쪽 서식 툴박스(색·크기·굵게·기울임·밑줄·가운데 줄), 두 리스트
-  testWidgets('두 리스트: 서식 툴박스는 버튼 오른쪽에 있고 누른 항목의 글자를 바꾼다', (tester) async {
-    TextStyle itemStyle() => tester
-        .widget<TextField>(
-          find
-              .byWidgetPredicate(
-                (w) => w is TextField && w.keyboardType != TextInputType.number,
-              )
-              .last,
-        )
-        .style!;
-    final goals = [GoalItem(text: '항목')];
-    final items = [AwarenessItem(text: '항목')];
-    for (final build in [
-      () => goalSidebar(goals),
-      () => awarenessSidebar(items),
+  // 2026-11-25: 동작 버튼 오른쪽 서식 툴박스(색·크기·굵게·기울임·밑줄·가운데 줄), 두 리스트.
+  // 항목 글 전체가 아니라 드래그해 선택한 글자에만 적용한다.
+  testWidgets('두 리스트: 서식 툴박스는 버튼 오른쪽에 있고 선택한 글자만 바꾼다', (tester) async {
+    final goals = [GoalItem(text: '항목글자')];
+    final items = [AwarenessItem(text: '항목글자')];
+    for (final (build, controller) in [
+      (() => goalSidebar(goals), goals.first.controller),
+      (() => awarenessSidebar(items), items.first.controller),
     ]) {
       setWide(tester);
       await tester.pumpWidget(build());
-      // 2026-11-25: 색 목록·편집 목록은 처음엔 숨기고 아이콘 버튼 2개만 보인다
+      // 색 목록·편집 목록은 처음엔 숨기고 아이콘 버튼 2개만 보인다
       expect(find.byTooltip('기울임'), findsNothing);
       expect(find.byTooltip('글자 색'), findsNothing);
       expect(
@@ -360,15 +352,19 @@ void main() {
       await tester.pump();
       expect(find.byTooltip('기울임'), findsOneWidget);
       expect(find.byTooltip('글자 색'), findsWidgets);
-      // 항목을 누르기 전에는 눌러도 바뀌지 않는다
-      await tester.tap(
-        find.byTooltip('서식을 바꿀 항목을 먼저 누르세요').last,
-        warnIfMissed: false,
-      );
-      await tester.pump();
-      expect(itemStyle().fontStyle, isNot(FontStyle.italic));
 
-      await tester.tap(find.text('항목').last);
+      // 글자를 선택하기 전에는 눌러도 바뀌지 않는다
+      await tester.tap(find.text('항목글자').last);
+      await tester.pump();
+      await tester.tap(find.byTooltip('기울임'), warnIfMissed: false);
+      await tester.pump();
+      expect(controller.charStyles.every((s) => s.isPlain), isTrue);
+
+      // 가운데 두 글자(목글)만 선택
+      controller.selection = const TextSelection(
+        baseOffset: 1,
+        extentOffset: 3,
+      );
       await tester.pump();
       for (final tip in ['굵게', '기울임', '밑줄', '가운데 줄']) {
         await tester.tap(find.byTooltip(tip));
@@ -376,18 +372,39 @@ void main() {
       }
       await tester.tap(find.byTooltip('글자 색').first);
       await tester.pump();
-      final style = itemStyle();
-      expect(style.fontWeight, FontWeight.bold);
-      expect(style.fontStyle, FontStyle.italic);
-      expect(style.decoration!.contains(TextDecoration.underline), isTrue);
-      expect(style.decoration!.contains(TextDecoration.lineThrough), isTrue);
-      expect(style.color, const Color(0xFFE6B422));
+      // 크기 A+ 한 번 = 크게(1.2). 툴박스 버튼은 입력칸 선택을 풀지 않는다
+      await tester.tap(find.byTooltip('글자 크게'));
+      await tester.pump();
+      expect(controller.lastRange, const TextRange(start: 1, end: 3));
 
-      await tester.tap(find.byTooltip('글자 크기'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('크게').last, warnIfMissed: false);
-      await tester.pumpAndSettle();
-      expect(itemStyle().fontSize, moreOrLessEquals(14 * 1.2));
+      final chars = controller.charStyles;
+      expect(chars[0].isPlain, isTrue);
+      expect(chars[3].isPlain, isTrue);
+      for (final s in [chars[1], chars[2]]) {
+        expect(s.bold && s.italic && s.underline && s.strike, isTrue);
+        expect(s.color, 0xE6B422);
+        expect(s.sizeScale, 1.2);
+      }
+      // 화면에도 선택 구간만 서식이 입혀져 그려진다
+      final span = controller.styledSpan(const TextStyle(fontSize: 14));
+      final runs = span.children!.cast<TextSpan>();
+      expect(runs.map((r) => r.text).toList(), ['항', '목글', '자']);
+      expect(runs[1].style!.fontStyle, FontStyle.italic);
+      expect(runs[1].style!.fontSize, moreOrLessEquals(14 * 1.2));
+      expect(runs[0].style!.fontStyle, isNot(FontStyle.italic));
+      // 저장할 구간
+      expect(controller.spans.length, 1);
+      expect(
+        (controller.spans.first.start, controller.spans.first.end),
+        (1, 3),
+      );
+
+      // 앞에 글자를 넣으면 서식 구간도 함께 밀린다
+      controller.text = '새${controller.text}';
+      expect(
+        (controller.spans.first.start, controller.spans.first.end),
+        (2, 4),
+      );
 
       // 다시 누르면 목록이 숨는다
       await tester.tap(find.byTooltip('글자 색 목록 닫기'));
@@ -396,8 +413,6 @@ void main() {
       expect(find.byTooltip('기울임'), findsNothing);
       expect(find.byTooltip('글자 색'), findsNothing);
     }
-    expect(goals.first.style.italic, isTrue);
-    expect(items.first.style.strike, isTrue);
     expect(tester.takeException(), isNull);
   });
 }
