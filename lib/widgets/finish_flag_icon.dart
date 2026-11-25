@@ -13,6 +13,9 @@ class FinishFlagIcon extends StatelessWidget {
 
   /// 아이콘 전체 높이 (깃발 + 글자)
   final double height;
+
+  /// 높이 [height]일 때 아이콘 폭 (깃발 폭 = 깃발 높이 72% × 1.5)
+  static double widthFor(double height) => height * 0.72 * 1.5;
   final Color poleColor;
   final Color textColor;
 
@@ -24,6 +27,7 @@ class FinishFlagIcon extends StatelessWidget {
     return Tooltip(
       message: 'ITEM FINISH',
       child: SizedBox(
+        width: widthFor(height),
         height: height,
         child: Column(
           mainAxisSize: MainAxisSize.min,

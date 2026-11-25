@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'top_bar_ticker.dart';
 import '../models/design_theme.dart';
 
 /// 목표 제목 직접 입력 및 편집 전용 박스 위젯
@@ -15,10 +16,14 @@ class GoalTitleDisplay extends StatefulWidget {
   final double width;
   final ValueChanged<String>? onTitleChanged;
 
+  /// 끝장 리스트에서 🎯로 항목을 보냈는지 (STEP 박스와 같은 조건). false면 아이콘만 오른쪽에.
+  final bool active;
+
   const GoalTitleDisplay({
     super.key,
     required this.title,
     required this.fontSize,
+    this.active = false,
     required this.theme,
     required this.width,
     this.onTitleChanged,
@@ -55,78 +60,109 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
   Widget build(BuildContext context) {
     final double viewportHeight = widget.fontSize * 1.5;
     final double targetWidth = widget.width;
+    final double iconSize = viewportHeight * GoalTitleDisplay.iconScale;
+    final double gap = widget.fontSize * 0.4;
+    final bool active = widget.active;
+    final double textWidth = (targetWidth - iconSize - gap).clamp(
+      0.0,
+      targetWidth,
+    );
     // print("widget.width: ${widget.width}");
 
-    return SizedBox(
-      width: targetWidth,
-      child: Container(
-        width: targetWidth,
-        // 2026-11-24 사용자 지시: 아래 ITEM FINISH(티커) 바와 크기·위치·글자 크기를 같게 한다.
-        // 티커와 같은 높이(글자 1.5배), 좌우 여백 없이 왼쪽부터 시작한다.
-        height: viewportHeight,
-        padding: EdgeInsets.zero,
+    // 폭이 바뀔 때(창 크기·처음 측정)는 바로 맞추고, 🎯 상태가 바뀔 때만 서서히 움직이도록
+    // 위치 대신 진행값 t(0=오른쪽, 1=왼쪽)를 애니메이션한다.
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: active ? 1.0 : 0.0),
+      duration: TopBarTicker.slideDuration,
+      curve: Curves.easeInOutCubic,
+      builder: (context, t, _) {
+        final double iconLeft = (targetWidth - iconSize) * (1 - t);
+        return SizedBox(
+          width: targetWidth,
+          child: Container(
+            width: targetWidth,
+            // 2026-11-24 사용자 지시: 아래 ITEM FINISH(티커) 바와 크기·위치·글자 크기를 같게 한다.
+            // 티커와 같은 높이(글자 1.5배), 좌우 여백 없이 왼쪽부터 시작한다.
+            height: viewportHeight,
+            padding: EdgeInsets.zero,
 
-        // decoration: BoxDecoration(
-        //   color: widget.theme.backgroundColor.withValues(alpha: 0.25),
-        //   borderRadius: BorderRadius.circular(10),
-        //   border: Border.all(
-        //     color: widget.theme.accentColor.withValues(alpha: 0.35),
-        //     width: 1.2,
-        //   ),
-        // ),
-        // alignment: Alignment.center,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            // 2026-11-25 사용자 지시: "목표:" 글자 대신 첨부 이미지(과녁 + 1) 아이콘.
-            // 아래 STEP 박스의 FINISH 아이콘과 같은 크기(박스 높이 × 0.95 × 1.5)로, 박스 위치·높이는 그대로 두고
-            // 아이콘만 위아래로 넘치게 그린다.
-            Tooltip(
-              message: '목표',
-              child: SizedBox(
-                width: viewportHeight * GoalTitleDisplay.iconScale,
-                height: viewportHeight,
-                child: OverflowBox(
-                  maxWidth: viewportHeight * GoalTitleDisplay.iconScale,
-                  maxHeight: viewportHeight * GoalTitleDisplay.iconScale,
-                  child: Image.asset(
-                    GoalTitleDisplay.iconAsset,
-                    width: viewportHeight * GoalTitleDisplay.iconScale,
-                    height: viewportHeight * GoalTitleDisplay.iconScale,
-                    filterQuality: FilterQuality.medium,
+            // decoration: BoxDecoration(
+            //   color: widget.theme.backgroundColor.withValues(alpha: 0.25),
+            //   borderRadius: BorderRadius.circular(10),
+            //   border: Border.all(
+            //     color: widget.theme.accentColor.withValues(alpha: 0.35),
+            //     width: 1.2,
+            //   ),
+            // ),
+            // alignment: Alignment.center,
+            // 2026-11-25 사용자 지시: 목표 글도 끝장 리스트에서 🎯를 눌러야 보인다. 누르기 전에는 과녁 아이콘만
+            // 박스 오른쪽에 있고, 누르면 목표 글과 함께 천천히 왼쪽으로 움직인다(아래 STEP 박스와 같은 방식).
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // 목표 글 (박스 밖으로 나간 부분은 잘라서 보이지 않게)
+                Positioned.fill(
+                  child: ClipRect(
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          left: iconLeft + iconSize + gap,
+                          top: 0,
+                          bottom: 0,
+                          width: textWidth,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextField(
+                              controller: _controller,
+                              onChanged: (val) {
+                                widget.onTitleChanged?.call(val);
+                              },
+                              textAlign: TextAlign.left,
+                              style: TextStyle(
+                                fontSize: widget.fontSize,
+                                fontWeight: FontWeight.bold,
+                                color: widget.theme.textColor,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: "오늘의 스케줄 입력...",
+                                hintStyle: TextStyle(
+                                  fontSize: widget.fontSize,
+                                  color: widget.theme.textColor.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                ),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-            SizedBox(width: widget.fontSize * 0.4),
-            Flexible(
-              child: TextField(
-                controller: _controller,
-                onChanged: (val) {
-                  widget.onTitleChanged?.call(val);
-                },
-                textAlign: TextAlign.left,
-                style: TextStyle(
-                  fontSize: widget.fontSize,
-                  fontWeight: FontWeight.bold,
-                  color: widget.theme.textColor,
-                ),
-                decoration: InputDecoration(
-                  hintText: "오늘의 스케줄 입력...",
-                  hintStyle: TextStyle(
-                    fontSize: widget.fontSize,
-                    color: widget.theme.textColor.withValues(alpha: 0.4),
+                // 과녁 아이콘 (FINISH 아이콘과 같은 크기, 박스 위아래로 넘침)
+                Positioned(
+                  left: iconLeft,
+                  top: (viewportHeight - iconSize) / 2,
+                  width: iconSize,
+                  height: iconSize,
+                  child: Tooltip(
+                    message: '목표',
+                    child: Image.asset(
+                      GoalTitleDisplay.iconAsset,
+                      width: iconSize,
+                      height: iconSize,
+                      filterQuality: FilterQuality.medium,
+                    ),
                   ),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

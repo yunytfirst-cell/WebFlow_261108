@@ -422,6 +422,7 @@ class _TopBarState extends State<TopBar> {
                 width: tickerWidth,
                 child: GoalTitleDisplay(
                   title: widget.sidebarTitle,
+                  active: !_showInitialMessage,
                   fontSize: tickerFontSize,
                   theme: widget.theme,
                   width: tickerWidth,

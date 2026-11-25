@@ -1,5 +1,6 @@
 import 'package:flow/models/design_theme.dart';
 import 'package:flow/widgets/daily_schedule_box.dart';
+import 'package:flow/widgets/goal_list_sidebar.dart';
 import 'package:flow/widgets/goal_title_display.dart';
 import 'package:flow/widgets/top_bar.dart';
 import 'package:flow/widgets/top_bar_ticker.dart';
@@ -72,14 +73,14 @@ void main() {
     expect(titleSize.height, moreOrLessEquals(tickerSize.height, epsilon: 0.5));
     // 2026-11-25 사용자 지시: STEP > 박스 글자는 목표 박스 글자의 2/3 (박스 크기는 그대로)
     expect(TopBarTicker.textScale, 2 / 3);
-    // 2026-11-25 사용자 지시: "ITEM FINISH" 글자 대신 깃발 아이콘(FINISH)을 STEP 박스 가운데에
+    // 2026-11-25 사용자 지시: "ITEM FINISH" 글자 대신 깃발 아이콘(FINISH). 🎯 전에는 STEP 박스 오른쪽 끝
     expect(find.text('ITEM FINISH'), findsNothing);
     final flag = find.byType(FinishFlagIcon);
     expect(flag, findsOneWidget);
     expect(find.text('FINISH'), findsOneWidget);
     expect(
-      tester.getCenter(flag).dx,
-      moreOrLessEquals(tester.getCenter(find.byType(TopBarTicker)).dx, epsilon: 1),
+      tester.getTopRight(flag).dx,
+      moreOrLessEquals(tester.getTopRight(find.byType(TopBarTicker)).dx, epsilon: 1),
     );
     // 2026-11-25 사용자 지시 "아이콘 1.5배": 박스 높이의 0.95×1.5, 아래 끝은 박스 아래 끝, 위로 넘침
     final tickerBox = tester.getRect(find.byType(TopBarTicker));
@@ -111,9 +112,9 @@ void main() {
     expect(target, findsOneWidget);
     final targetBox = tester.getRect(target);
     expect(targetBox.height, moreOrLessEquals(flagBox.height, epsilon: 0.5));
-    // 목표 박스 왼쪽 끝에서 시작하고, 위 설정 아이콘·아래 깃발과 겹치지 않는다
+    // 🎯 전에는 목표 박스 오른쪽 끝에 있고, 위 설정 아이콘·아래 깃발과 겹치지 않는다
     final goalBox = tester.getRect(find.byType(GoalTitleDisplay));
-    expect(targetBox.left, moreOrLessEquals(goalBox.left, epsilon: 0.5));
+    expect(targetBox.right, moreOrLessEquals(goalBox.right, epsilon: 0.5));
     expect(
       targetBox.top,
       greaterThanOrEqualTo(tester.getBottomLeft(find.byTooltip('설정')).dy),
@@ -211,6 +212,88 @@ void main() {
       greaterThan(tester.getTopRight(find.text('09:05')).dx),
     );
     expect(timeX, lessThan(tester.getTopLeft(find.text('운동')).dx));
+    expect(tester.takeException(), isNull);
+  });
+
+  // 2026-11-25 사용자 지시: 🎯(메인 화면으로 보내기)를 누르면 과녁·FINISH 아이콘이 표시할 글과 함께
+  // 오른쪽에서 왼쪽으로 서서히 움직인다. 누르기 전에는 글이 보이지 않는다.
+  testWidgets('🎯로 보내면 아이콘이 글과 함께 왼쪽으로 움직인다', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    final goals = [GoalItem(text: '첫 단계')];
+
+    Widget bar(String selected) => MaterialApp(
+          home: Scaffold(
+            body: TopBar(
+              selectedSubGoal: selected,
+              sidebarGoals: goals,
+              sidebarTitle: '오늘 목표',
+              scrollController: controller,
+              maxWidth: 1280,
+              maxHeight: 800,
+              onClose: () {},
+              onToggleDisplayMode: () {},
+              currentModeName: 'focus',
+              theme: AppThemeData.getTheme(AppThemeMode.values.first),
+              currentTime: DateTime(2026, 11, 25, 9),
+            ),
+          ),
+        );
+    final flag = find.byType(FinishFlagIcon);
+    final target = find.byWidgetPredicate(
+      (w) =>
+          w is Image &&
+          w.image is AssetImage &&
+          (w.image as AssetImage).assetName == GoalTitleDisplay.iconAsset,
+    );
+    final ticker = find.byType(TopBarTicker);
+    final goalBox = find.byType(GoalTitleDisplay);
+    final step = find.textContaining('STEP > 1.');
+    final title = find.text('오늘 목표');
+
+    await tester.pumpWidget(bar(''));
+    await tester.pump();
+    // 보내기 전: 두 아이콘 모두 오른쪽 끝, 글은 박스 밖(오른쪽)에 숨어 있다
+    expect(tester.getTopRight(flag).dx,
+        moreOrLessEquals(tester.getTopRight(ticker).dx, epsilon: 1));
+    expect(tester.getTopRight(target).dx,
+        moreOrLessEquals(tester.getTopRight(goalBox).dx, epsilon: 1));
+    expect(tester.getTopLeft(step).dx,
+        greaterThanOrEqualTo(tester.getTopRight(ticker).dx));
+    expect(tester.getTopLeft(title).dx,
+        greaterThanOrEqualTo(tester.getTopRight(goalBox).dx));
+    final flagStart = tester.getTopLeft(flag).dx;
+
+    // 🎯로 보냄 → 중간에는 움직이는 중(서서히)
+    await tester.pumpWidget(bar('첫 단계'));
+    await tester.pump(TopBarTicker.slideDuration ~/ 2);
+    final flagMid = tester.getTopLeft(flag).dx;
+    expect(flagMid, lessThan(flagStart - 1));
+    expect(flagMid, greaterThan(tester.getTopLeft(ticker).dx + 1));
+    // 글은 아이콘 바로 오른쪽에 붙어 함께 움직인다
+    expect(tester.getTopLeft(step).dx, greaterThan(tester.getTopRight(flag).dx));
+    expect(tester.getTopLeft(step).dx - tester.getTopRight(flag).dx, lessThan(20));
+
+    await tester.pumpAndSettle();
+    // 끝나면 두 아이콘 모두 왼쪽 끝, 글은 아이콘 오른쪽에 보인다
+    expect(tester.getTopLeft(flag).dx,
+        moreOrLessEquals(tester.getTopLeft(ticker).dx, epsilon: 1));
+    expect(tester.getTopLeft(target).dx,
+        moreOrLessEquals(tester.getTopLeft(goalBox).dx, epsilon: 1));
+    expect(tester.getTopLeft(step).dx, greaterThan(tester.getTopRight(flag).dx));
+    expect(tester.getTopLeft(step).dx, lessThan(tester.getTopRight(ticker).dx));
+    expect(tester.getTopLeft(title).dx, greaterThan(tester.getTopRight(target).dx));
+    expect(tester.getTopLeft(title).dx, lessThan(tester.getTopRight(goalBox).dx));
+
+    // 닫으면(선택 해제) 다시 오른쪽으로 돌아간다
+    await tester.pumpWidget(bar(''));
+    await tester.pumpAndSettle();
+    expect(tester.getTopRight(flag).dx,
+        moreOrLessEquals(tester.getTopRight(ticker).dx, epsilon: 1));
     expect(tester.takeException(), isNull);
   });
 }

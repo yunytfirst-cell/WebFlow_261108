@@ -23,6 +23,9 @@ class TopBarTicker extends StatefulWidget {
   /// 완료(깃발) 아이콘 높이 ÷ 박스 높이 (처음 0.95 → 2026-11-25 사용자 지시로 1.5배)
   static const double finishIconScale = 0.95 * 1.5;
 
+  /// 🎯를 누르면 아이콘이 오른쪽 → 왼쪽으로 움직이는 시간 ("서서히")
+  static const Duration slideDuration = Duration(milliseconds: 900);
+
   const TopBarTicker({
     super.key,
     required this.lines,
@@ -56,37 +59,41 @@ class _TopBarTickerState extends State<TopBarTicker> {
 
     const double controlButtonsWidth = 85.0; // 우측 조작 버튼 영역 폭
 
-    return Stack(
-      alignment: Alignment.center,
-      // 완료 아이콘은 박스보다 커서 위로 넘쳐 보이게 둔다
+    // 2026-11-25 사용자 지시: 끝장 리스트에서 🎯(메인 화면으로 보내기)를 누르기 전에는 FINISH 아이콘이 박스 오른쪽에 있고,
+    // 누르면 STEP 글과 함께 천천히 왼쪽으로 움직인다(글은 아이콘 바로 오른쪽에 붙어 따라온다).
+    final bool active = !widget.showInitialMessage;
+    final double iconH = viewportHeight * TopBarTicker.finishIconScale;
+    final double iconW = FinishFlagIcon.widthFor(iconH);
+    final double gap = widget.fontSize * 0.4;
+    final double textWidth =
+        (tickerWidth - iconW - gap - controlButtonsWidth).clamp(0.0, tickerWidth);
+
+    // 폭이 바뀔 때(창 크기·처음 측정)는 바로 맞추고, 🎯 상태가 바뀔 때만 서서히 움직이도록
+    // 위치 대신 진행값 t(0=오른쪽, 1=왼쪽)를 애니메이션한다.
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: active ? 1.0 : 0.0),
+      duration: TopBarTicker.slideDuration,
+      curve: Curves.easeInOutCubic,
+      builder: (context, t, _) {
+    final double iconLeft = (tickerWidth - iconW) * (1 - t);
+    return SizedBox(
+      width: tickerWidth,
+      height: viewportHeight,
+      child: Stack(
+      // 아이콘은 박스보다 커서 위로 넘쳐 보이게 둔다
       clipBehavior: Clip.none,
       children: [
-        // 1. 텍스트 표시 영역 (우측 버튼 영역 침범 방지 + 마퀴 스크롤)
-        Container(
-          height: viewportHeight,
-          width: tickerWidth,
-          // 2026-11-24 사용자 지시: 위 목표 표시바와 글자 시작 위치를 같게(왼쪽부터)
-          // 완료 아이콘은 박스 가운데 (2026-11-25 사용자 지시)
-          alignment: widget.showInitialMessage ? Alignment.center : Alignment.centerLeft,
-          padding: EdgeInsets.only(
-            right: (!widget.showInitialMessage) ? controlButtonsWidth : 0,
-          ),
-          child: widget.showInitialMessage
-                // 2026-11-25 사용자 지시: "ITEM FINISH" 글자 대신 첨부 이미지(엇갈린 체크 깃발 + FINISH) 아이콘.
-                // 끝장 리스트에서 항목을 고르면 사라지고 STEP 글이 나온다(예전과 같은 조건).
-                // 2026-11-25 사용자 지시 "아이콘 지금의 1.5배": 높이 = 박스 높이 × 0.95 × 1.5.
-                // STEP 박스 위치·크기는 그대로 두고 아이콘 아래 끝을 박스 아래 끝에 맞춰 위로 넘치게 한다.
-                ? OverflowBox(
-                    maxHeight: viewportHeight * TopBarTicker.finishIconScale,
-                    alignment: Alignment.bottomCenter,
-                    child: FinishFlagIcon(
-                      key: const ValueKey("initial_msg"),
-                      height: viewportHeight * TopBarTicker.finishIconScale,
-                      poleColor: widget.theme.textColor,
-                      textColor: widget.theme.accentColor,
-                    ),
-                  )
-                : ClipRect(child: ListView.builder(
+        // 1. STEP 글 (박스 밖으로 나간 부분은 잘라서 보이지 않게)
+        Positioned.fill(
+          child: ClipRect(
+            child: Stack(
+              children: [
+                Positioned(
+                  left: iconLeft + iconW + gap,
+                  top: 0,
+                  bottom: 0,
+                  width: textWidth,
+                  child: ListView.builder(
                     controller: widget.scrollController,
                     itemCount: widget.lines.length,
                     itemExtent: viewportHeight,
@@ -123,6 +130,24 @@ class _TopBarTickerState extends State<TopBarTicker> {
                       );
                     },
                   ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // FINISH 아이콘 (첨부 이미지: 엇갈린 체크 깃발 + FINISH, 박스 높이 × 0.95 × 1.5).
+        // 아래 끝은 박스 아래 끝, 위로 넘친다.
+        Positioned(
+          left: iconLeft,
+          bottom: 0,
+          width: iconW,
+          height: iconH,
+          child: FinishFlagIcon(
+            key: const ValueKey("initial_msg"),
+            height: iconH,
+            poleColor: widget.theme.textColor,
+            textColor: widget.theme.accentColor,
           ),
         ),
 
@@ -130,6 +155,7 @@ class _TopBarTickerState extends State<TopBarTicker> {
         if (!widget.showInitialMessage)
           Positioned(
             right: 0,
+            top: 0,
             child: SizedBox(
               width: controlButtonsWidth,
               height: viewportHeight,
@@ -173,6 +199,9 @@ class _TopBarTickerState extends State<TopBarTicker> {
             ),
           ),
       ],
+      ),
+    );
+      },
     );
   }
 }
