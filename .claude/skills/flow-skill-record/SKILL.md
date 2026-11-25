@@ -27,6 +27,12 @@ description: Flow 프로젝트에서 skill(.claude/skills) 기록 규칙과 자�
 
 맞는 skill이 없으면 새 skill 폴더를 만들고 `CLAUDE.md`의 Skills 표에 한 줄 추가한다. skill만 보고 같은 결과를 처음부터 다시 만들 수 있어야 한다.
 
+## skill·코드에 글을 끼워 넣을 때 (2026-11-25, 같은 실수 4번)
+
+- bash heredoc 안 python 문자열에 백슬래시가 들어가면 깨진다: Windows 경로 `build\windows\x64\runner\Release\flow.exe`의 `\x`·`\r`·`\f`가 제어문자로 바뀌어 `build\windowsdunner\Releaselow.exe`처럼 되거나, `\x`가 문법 오류를 낸다. Dart의 `'\n'`도 실제 줄바꿈이 된다.
+- 그래서: 짧은 추가·수정은 **Edit 도구**, 긴 코드 수정은 **Write 도구로 .py 파일을 만들어** 실행한다. skill에 경로를 쓸 때는 슬래시(`build/windows/...`)로 쓴다.
+- 쓴 뒤 제어문자 검사: `python -c "s=open('파일',encoding='utf-8').read(); print([hex(ord(c)) for c in s if ord(c)<32 and c not in chr(10)+chr(9)])"` → `[]`이어야 한다.
+
 ## 답변에 보고
 
 답변 끝 부분에 "skill 저장: `<skill 이름>` — 무엇" 한 줄. 사용자가 "저장하고 있지?"라고 묻게 만들지 않는다.
