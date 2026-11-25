@@ -87,7 +87,7 @@ void main() {
     final flagBox = tester.getRect(flag);
     expect(
       flagBox.height,
-      moreOrLessEquals(tickerBox.height * 0.95 * 1.5, epsilon: 0.5),
+      moreOrLessEquals(tickerBox.height * 0.95, epsilon: 0.5),
     );
     expect(flagBox.bottom, moreOrLessEquals(tickerBox.bottom, epsilon: 0.5));
     // 커져도 상단 컨트롤 아이콘과 겹치지 않는다
@@ -279,6 +279,15 @@ void main() {
     expect(tester.getTopLeft(step).dx - tester.getTopRight(flag).dx, lessThan(20));
 
     await tester.pumpAndSettle();
+    // 목표 글은 좌우만 잘리고 위아래는 잘리지 않는다(맑은 고딕 글자 아래 잘림 방지)
+    final clip = tester.widget<ClipRect>(
+      find.ancestor(of: title, matching: find.byType(ClipRect)).first,
+    );
+    expect(clip.clipper, isA<HorizontalOnlyClipper>());
+    final goalRect = tester.getRect(goalBox);
+    final clipRect = const HorizontalOnlyClipper().getClip(goalRect.size);
+    expect(clipRect.top, lessThan(0));
+    expect(clipRect.bottom, greaterThan(goalRect.height));
     // 끝나면 두 아이콘 모두 왼쪽 끝, 글은 아이콘 오른쪽에 보인다
     expect(tester.getTopLeft(flag).dx,
         moreOrLessEquals(tester.getTopLeft(ticker).dx, epsilon: 1));

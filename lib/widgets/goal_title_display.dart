@@ -8,7 +8,8 @@ class GoalTitleDisplay extends StatefulWidget {
   static const String iconAsset = 'assets/images/goal_target.png';
 
   /// 아이콘 크기 ÷ 박스 높이 = FINISH 아이콘과 같음 (TopBarTicker.finishIconScale)
-  static const double iconScale = 0.95 * 1.5;
+  static const double iconScale =
+      0.95 * 1.5 * 2 / 3; // 2026-11-25 사용자 지시 "아이콘 지금의 2/3" → 0.95
 
   final String title;
   final double fontSize;
@@ -102,7 +103,10 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
               children: [
                 // 목표 글 (박스 밖으로 나간 부분은 잘라서 보이지 않게)
                 Positioned.fill(
+                  // 좌우만 자른다(밀려 들어오는 글을 박스 밖에서 숨김). 위아래까지 자르면
+                  // 맑은 고딕 굵은 글자의 아래가 잘려 보였다(2026-11-25 사용자 지적).
                   child: ClipRect(
+                    clipper: const HorizontalOnlyClipper(),
                     child: Stack(
                       children: [
                         Positioned(
@@ -165,4 +169,16 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
       },
     );
   }
+}
+
+/// 좌우만 자르고 위아래는 넉넉히 두는 클리퍼 (글자 아래가 잘리지 않게)
+class HorizontalOnlyClipper extends CustomClipper<Rect> {
+  const HorizontalOnlyClipper();
+
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTRB(0, -size.height, size.width, size.height * 2);
+
+  @override
+  bool shouldReclip(HorizontalOnlyClipper oldClipper) => false;
 }

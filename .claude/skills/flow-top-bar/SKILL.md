@@ -53,6 +53,8 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 - 상태: `active = !_showInitialMessage`(TopBar). 티커는 `showInitialMessage`로, `GoalTitleDisplay`는 `active:`로 받는다(기본 false).
 - 보내기 전(active false): 과녁 아이콘은 목표 박스 **오른쪽 끝**, FINISH 아이콘은 STEP 박스 **오른쪽 끝**. 목표 글·STEP 글은 박스 오른쪽 밖에 있어 `ClipRect`로 보이지 않는다.
 - 🎯 누르면(active true): 두 아이콘이 `TopBarTicker.slideDuration`(900ms) 동안 `Curves.easeInOutCubic`로 왼쪽 끝까지 움직이고, 글은 **아이콘 오른쪽(간격 fontSize*0.4)에 붙어 함께** 들어온다. 닫으면(선택 해제) 반대로 오른쪽으로 돌아간다.
+- **아이콘 크기 = 박스 높이 × 0.95** (2026-11-25 사용자 지시 "아이콘 지금의 2/3": 0.95×1.5 → ×2/3). `TopBarTicker.finishIconScale`·`GoalTitleDisplay.iconScale` 둘 다 같은 값.
+- **목표 글은 좌우만 자른다** (2026-11-25 사용자 지적 "목표 박스 안 글자 하단이 잘려 보인다"; 원인: 1.6.0에서 밀려 들어오는 글을 숨기려고 넣은 `ClipRect`가 박스 높이(글자×1.5)에서 위아래까지 잘라, 맑은 고딕 굵은 글자의 아래가 잘림 — 테스트 글꼴 Ahem은 딱 맞아 테스트로는 안 보임). `ClipRect(clipper: HorizontalOnlyClipper())`(Rect(0, −h, w, 2h)). STEP 박스의 ClipRect는 위아래 줄이 보이면 안 되므로 그대로 둔다.
 - 구현: 바깥 `SizedBox(박스 폭, 박스 높이)` → `Stack(clipBehavior: none)[ Positioned.fill(ClipRect(Stack[ Positioned(left: iconLeft+아이콘폭+간격, 글) ])), Positioned(left: iconLeft, 아이콘) ]`. iconLeft = `(박스 폭 − 아이콘 폭) × (1 − t)`, t는 `TweenAnimationBuilder<double>(tween: Tween(end: active ? 1 : 0))`의 진행값.
   - **AnimatedPositioned를 쓰지 않는 이유**(사용자에게 보인 문제는 아니고 테스트에서 잡음): 시작 직후 목표바 폭을 다시 재면(700→592) AnimatedPositioned가 새 위치로 0.9초 동안 미끄러져, 🎯를 안 눌러도 아이콘이 움직였다. 진행값만 애니메이션하면 폭 변화는 바로 반영되고 🎯 상태 변화만 서서히 움직인다.
   - STEP 글 폭 = 박스 폭 − 아이콘 폭 − 간격 − 조작 버튼 폭(85). 조작 버튼(↑↓×)은 active일 때 오른쪽(`top: 0`).

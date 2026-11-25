@@ -21,7 +21,7 @@ class TopBarTicker extends StatefulWidget {
   static const double textScale = 2 / 3;
 
   /// 완료(깃발) 아이콘 높이 ÷ 박스 높이 (처음 0.95 → 2026-11-25 사용자 지시로 1.5배)
-  static const double finishIconScale = 0.95 * 1.5;
+  static const double finishIconScale = 0.95 * 1.5 * 2 / 3; // 2026-11-25 사용자 지시 "아이콘 지금의 2/3" → 0.95
 
   /// 🎯를 누르면 아이콘이 오른쪽 → 왼쪽으로 움직이는 시간 ("서서히")
   static const Duration slideDuration = Duration(milliseconds: 900);
