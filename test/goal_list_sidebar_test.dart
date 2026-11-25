@@ -348,14 +348,21 @@ void main() {
     ]) {
       setWide(tester);
       await tester.pumpWidget(build());
-      expect(find.byTooltip('기울임'), findsOneWidget);
+      // 2026-11-25: 색 목록·편집 목록은 처음엔 숨기고 아이콘 버튼 2개만 보인다
+      expect(find.byTooltip('기울임'), findsNothing);
+      expect(find.byTooltip('글자 색'), findsNothing);
       expect(
-        tester.getCenter(find.byTooltip('기울임')).dx,
+        tester.getCenter(find.byTooltip('글자 편집 목록 열기')).dx,
         greaterThan(tester.getCenter(find.text('폴더관리')).dx),
       );
+      await tester.tap(find.byTooltip('글자 색 목록 열기'));
+      await tester.tap(find.byTooltip('글자 편집 목록 열기'));
+      await tester.pump();
+      expect(find.byTooltip('기울임'), findsOneWidget);
+      expect(find.byTooltip('글자 색'), findsWidgets);
       // 항목을 누르기 전에는 눌러도 바뀌지 않는다
       await tester.tap(
-        find.byTooltip('서식을 바꿀 항목을 먼저 누르세요'),
+        find.byTooltip('서식을 바꿀 항목을 먼저 누르세요').last,
         warnIfMissed: false,
       );
       await tester.pump();
@@ -381,6 +388,13 @@ void main() {
       await tester.tap(find.text('크게').last, warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(itemStyle().fontSize, moreOrLessEquals(14 * 1.2));
+
+      // 다시 누르면 목록이 숨는다
+      await tester.tap(find.byTooltip('글자 색 목록 닫기'));
+      await tester.tap(find.byTooltip('글자 편집 목록 닫기'));
+      await tester.pump();
+      expect(find.byTooltip('기울임'), findsNothing);
+      expect(find.byTooltip('글자 색'), findsNothing);
     }
     expect(goals.first.style.italic, isTrue);
     expect(items.first.style.strike, isTrue);
