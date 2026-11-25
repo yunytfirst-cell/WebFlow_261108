@@ -81,9 +81,23 @@ void main() {
       tester.getCenter(flag).dx,
       moreOrLessEquals(tester.getCenter(find.byType(TopBarTicker)).dx, epsilon: 1),
     );
+    // 2026-11-25 사용자 지시 "아이콘 1.5배": 박스 높이의 0.95×1.5, 아래 끝은 박스 아래 끝, 위로 넘침
+    final tickerBox = tester.getRect(find.byType(TopBarTicker));
+    final flagBox = tester.getRect(flag);
     expect(
-      tester.getSize(flag).height,
-      lessThanOrEqualTo(tester.getSize(find.byType(TopBarTicker)).height),
+      flagBox.height,
+      moreOrLessEquals(tickerBox.height * 0.95 * 1.5, epsilon: 0.5),
+    );
+    expect(flagBox.bottom, moreOrLessEquals(tickerBox.bottom, epsilon: 0.5));
+    // 커져도 상단 컨트롤 아이콘과 겹치지 않는다
+    expect(
+      flagBox.top,
+      greaterThan(tester.getBottomLeft(find.byTooltip('설정')).dy),
+    );
+    // 위 목표 박스와도 겹치지 않는다
+    expect(
+      flagBox.top,
+      greaterThanOrEqualTo(tester.getRect(find.byType(GoalTitleDisplay)).bottom),
     );
 
     // 2026-11-25 사용자 지시: 아이콘 행~목표 박스 간격을 1/2로(목표 박스를 위로), STEP 박스 위치는 그대로

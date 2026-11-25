@@ -20,6 +20,9 @@ class TopBarTicker extends StatefulWidget {
   /// STEP > 박스 글자 크기 = 목표 박스 글자(fontSize)의 2/3 (2026-11-25 사용자 지시)
   static const double textScale = 2 / 3;
 
+  /// 완료(깃발) 아이콘 높이 ÷ 박스 높이 (처음 0.95 → 2026-11-25 사용자 지시로 1.5배)
+  static const double finishIconScale = 0.95 * 1.5;
+
   const TopBarTicker({
     super.key,
     required this.lines,
@@ -55,6 +58,8 @@ class _TopBarTickerState extends State<TopBarTicker> {
 
     return Stack(
       alignment: Alignment.center,
+      // 완료 아이콘은 박스보다 커서 위로 넘쳐 보이게 둔다
+      clipBehavior: Clip.none,
       children: [
         // 1. 텍스트 표시 영역 (우측 버튼 영역 침범 방지 + 마퀴 스크롤)
         Container(
@@ -66,17 +71,22 @@ class _TopBarTickerState extends State<TopBarTicker> {
           padding: EdgeInsets.only(
             right: (!widget.showInitialMessage) ? controlButtonsWidth : 0,
           ),
-          child: ClipRect(
-            child: widget.showInitialMessage
+          child: widget.showInitialMessage
                 // 2026-11-25 사용자 지시: "ITEM FINISH" 글자 대신 첨부 이미지(엇갈린 체크 깃발 + FINISH) 아이콘.
                 // 끝장 리스트에서 항목을 고르면 사라지고 STEP 글이 나온다(예전과 같은 조건).
-                ? FinishFlagIcon(
-                    key: const ValueKey("initial_msg"),
-                    height: viewportHeight * 0.95,
-                    poleColor: widget.theme.textColor,
-                    textColor: widget.theme.accentColor,
+                // 2026-11-25 사용자 지시 "아이콘 지금의 1.5배": 높이 = 박스 높이 × 0.95 × 1.5.
+                // STEP 박스 위치·크기는 그대로 두고 아이콘 아래 끝을 박스 아래 끝에 맞춰 위로 넘치게 한다.
+                ? OverflowBox(
+                    maxHeight: viewportHeight * TopBarTicker.finishIconScale,
+                    alignment: Alignment.bottomCenter,
+                    child: FinishFlagIcon(
+                      key: const ValueKey("initial_msg"),
+                      height: viewportHeight * TopBarTicker.finishIconScale,
+                      poleColor: widget.theme.textColor,
+                      textColor: widget.theme.accentColor,
+                    ),
                   )
-                : ListView.builder(
+                : ClipRect(child: ListView.builder(
                     controller: widget.scrollController,
                     itemCount: widget.lines.length,
                     itemExtent: viewportHeight,

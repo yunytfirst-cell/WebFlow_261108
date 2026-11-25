@@ -51,10 +51,10 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 ## ITEM FINISH = 깃발 아이콘 (2026-11-25 사용자 지시, 첨부 이미지 "엇갈린 체크무늬 깃발 + FINISH")
 
 - 티커가 `showInitialMessage`일 때(끝장 리스트에서 🎯로 고른 항목이 없거나 그 항목을 끝냄 — 예전 조건 그대로) "ITEM FINISH" 글자 대신 `FinishFlagIcon`(`lib/widgets/finish_flag_icon.dart`)을 **박스 가운데**(Container alignment center, 오른쪽 패딩 0)에 둔다. 항목을 고르면 아이콘이 사라지고 STEP 글이 왼쪽부터 나온다.
-- `FinishFlagIcon(height: viewportHeight*0.95, poleColor: theme.textColor, textColor: theme.accentColor)`, 툴팁 `ITEM FINISH`. 위 72% = 깃발(폭 = 높이×1.5, `CustomPainter`), 아래 = `FINISH`(w900, 자간 2, 깃발 폭의 80%에 FittedBox).
+- `FinishFlagIcon(height: viewportHeight * TopBarTicker.finishIconScale, …)` — `finishIconScale = 0.95 * 1.5` (2026-11-25 사용자 지시 "아이콘 지금의 1.5배"). 박스보다 크므로 `OverflowBox(maxHeight: 그 높이, alignment: bottomCenter)`로 감싸 **아래 끝은 박스 아래 끝, 위로 넘치게** 한다. 티커 Stack은 `clipBehavior: Clip.none`, ClipRect는 STEP 목록(ListView)에만 둔다(아이콘까지 감싸면 잘림). STEP 박스 위치·크기는 그대로. 1280×800에서 아이콘 위 끝(137.6)은 목표 박스 아래 끝(120.7)보다 아래라 겹치지 않는다. poleColor: theme.textColor, textColor: theme.accentColor, 툴팁 `ITEM FINISH`. 위 72% = 깃발(폭 = 높이×1.5, `CustomPainter`), 아래 = `FINISH`(w900, 자간 2, 깃발 폭의 80%에 FittedBox).
 - 깃발 그리기: 설계 좌표 120×80, 왼쪽 깃대 (50,3)→(74,79) 굵기 4 둥근 끝, 깃발 네 모서리 (50,3)·(62,44)·(6,56)·(1,14)를 쌍선형으로 7×5칸 나눠 흑/백 번갈아 칠하고 흰 테두리 1.5. 오른쪽은 x → 120−x 반전(깃대가 X로 교차).
 - 모양 확인법: 임시 테스트에서 `RepaintBoundary`+`matchesGoldenFile` 후 `--update-goldens`로 PNG를 만들어 Read로 보고 지운다(테스트 글꼴이라 글자는 네모로 보임). 첫 버전은 깃발이 작고 글자가 넓어서 비율을 고쳤다.
-- 테스트: `ITEM FINISH` 글자 없음, `FinishFlagIcon` 하나, 가운데 x가 티커 가운데와 1 이내, 높이 ≤ 티커 높이.
+- 테스트: `ITEM FINISH` 글자 없음, `FinishFlagIcon` 하나, 가운데 x가 티커 가운데와 1 이내, 높이 = 티커 높이×0.95×1.5, 아래 끝 = 티커 아래 끝, 위 끝이 설정 아이콘·목표 박스보다 아래.
 
 ## 주의
 
