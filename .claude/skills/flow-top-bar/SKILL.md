@@ -48,6 +48,13 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 - 티커 글자(`ITEM FINISH`, `STEP > n. …`)는 목표 박스 글자의 **2/3** (`TopBarTicker.textScale`). 박스 높이·itemExtent·위아래 버튼 크기는 `fontSize` 기준 그대로라 STEP 박스 위치·크기는 그대로다.
 - 그래서 "목표 바와 ITEM FINISH 글자 크기 같음" 규칙은 이제 "ITEM FINISH = 목표 × 2/3"이다. 크기·글자 시작 x는 여전히 같다. 테스트가 둘 다 검사한다.
 
+## "목표:" = 과녁 아이콘 (2026-11-25 사용자 지시 "목표: 글자 첨부된 아이콘으로 변경, 하단(FINISH 아이콘) 설정과 동일")
+
+- `GoalTitleDisplay`의 `목표: ` 글자 대신 `Image.asset(GoalTitleDisplay.iconAsset = 'assets/images/goal_target.png')`(툴팁 `목표`) + 간격 `fontSize*0.4` → 제목 입력칸.
+- 크기는 아래 FINISH 아이콘과 같다: `GoalTitleDisplay.iconScale = 0.95 * 1.5` × 박스 높이. Row 안 자리는 `SizedBox(폭 = 아이콘 크기, 높이 = 박스 높이)` + `OverflowBox`로 **위아래로 넘치게** 그린다(박스 위치·높이 그대로). 1280×800에서 설정 아이콘·FINISH 깃발과 겹치지 않는다(테스트).
+- 에셋 만들기: 첨부 PNG를 PIL로 네 모서리에서 `floodfill(thresh=40)`해 바깥 흰 바탕만 투명하게(안쪽 흰 띠는 그대로) → `getbbox()`로 자르고 정사각형 투명 캔버스 가운데에 붙여 저장. 어두운 바탕에 합성한 미리보기를 Read로 확인. `pubspec.yaml` assets에 경로 추가.
+- 테스트: `목표: ` 글자 없음, 에셋 Image 하나, 높이 = 깃발 높이, 왼쪽 끝 = 목표 박스 왼쪽, 위 끝 ≥ 설정 아이콘 아래, 아래 끝 ≤ 깃발 위.
+
 ## ITEM FINISH = 깃발 아이콘 (2026-11-25 사용자 지시, 첨부 이미지 "엇갈린 체크무늬 깃발 + FINISH")
 
 - 티커가 `showInitialMessage`일 때(끝장 리스트에서 🎯로 고른 항목이 없거나 그 항목을 끝냄 — 예전 조건 그대로) "ITEM FINISH" 글자 대신 `FinishFlagIcon`(`lib/widgets/finish_flag_icon.dart`)을 **박스 가운데**(Container alignment center, 오른쪽 패딩 0)에 둔다. 항목을 고르면 아이콘이 사라지고 STEP 글이 왼쪽부터 나온다.

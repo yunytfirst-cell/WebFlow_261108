@@ -100,6 +100,26 @@ void main() {
       greaterThanOrEqualTo(tester.getRect(find.byType(GoalTitleDisplay)).bottom),
     );
 
+    // 2026-11-25 사용자 지시: "목표:" 글자 대신 과녁 아이콘, FINISH 아이콘과 같은 크기
+    expect(find.text('목표: '), findsNothing);
+    final target = find.byWidgetPredicate(
+      (w) =>
+          w is Image &&
+          w.image is AssetImage &&
+          (w.image as AssetImage).assetName == GoalTitleDisplay.iconAsset,
+    );
+    expect(target, findsOneWidget);
+    final targetBox = tester.getRect(target);
+    expect(targetBox.height, moreOrLessEquals(flagBox.height, epsilon: 0.5));
+    // 목표 박스 왼쪽 끝에서 시작하고, 위 설정 아이콘·아래 깃발과 겹치지 않는다
+    final goalBox = tester.getRect(find.byType(GoalTitleDisplay));
+    expect(targetBox.left, moreOrLessEquals(goalBox.left, epsilon: 0.5));
+    expect(
+      targetBox.top,
+      greaterThanOrEqualTo(tester.getBottomLeft(find.byTooltip('설정')).dy),
+    );
+    expect(targetBox.bottom, lessThanOrEqualTo(flagBox.top));
+
     // 2026-11-25 사용자 지시: 아이콘 행~목표 박스 간격을 1/2로(목표 박스를 위로), STEP 박스 위치는 그대로
     final tickerRect = tester.getRect(find.byType(TopBarTicker));
     final goalRect = tester.getRect(find.byType(GoalTitleDisplay));
