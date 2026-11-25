@@ -52,7 +52,7 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 
 - 상태: `active = !_showInitialMessage`(TopBar). 티커는 `showInitialMessage`로, `GoalTitleDisplay`는 `active:`로 받는다(기본 false).
 - 보내기 전(active false): 과녁 아이콘은 목표 박스 **오른쪽 끝**, FINISH 아이콘은 STEP 박스 **오른쪽 끝**. 목표 글·STEP 글은 박스 오른쪽 밖에 있어 `ClipRect`로 보이지 않는다.
-- 🎯 누르면(active true): 두 아이콘이 `TopBarTicker.slideDuration`(900ms) 동안 `Curves.easeInOutCubic`로 왼쪽 끝까지 움직이고, 글은 **아이콘 오른쪽(간격 fontSize*0.4)에 붙어 함께** 들어온다. 닫으면(선택 해제) 반대로 오른쪽으로 돌아간다.
+- 🎯 누르면(active true): 두 아이콘이 `TopBarTicker.slideDuration`(1800ms — 2026-11-25 사용자 지시 "이동 속도 지금의 1/2"로 900ms에서 늘림) 동안 `Curves.easeInOutCubic`로 왼쪽 끝까지 움직이고, 글은 **아이콘 오른쪽(간격 fontSize*0.4)에 붙어 함께** 들어온다. 닫으면(선택 해제) 반대로 오른쪽으로 돌아간다.
 - **아이콘 크기 = 박스 높이 × 0.95** (2026-11-25 사용자 지시 "아이콘 지금의 2/3": 0.95×1.5 → ×2/3). `TopBarTicker.finishIconScale`·`GoalTitleDisplay.iconScale` 둘 다 같은 값.
 - **세로 가운데 정렬** (2026-11-25 사용자 지시 "아이콘과 표시 글자는 위치 높이 중앙에 정렬"): 두 아이콘 모두 `top: (박스 높이 − 아이콘 높이)/2`(FINISH 아이콘은 1.5.2~1.6.1에 `bottom: 0`이라 아래로 붙어 있었음). 목표 TextField는 `textAlignVertical: center`, 글자·힌트 `height: 1.0`(STEP 글과 같음; 기본 줄 높이면 맑은 고딕 글자가 위로 치우침). 테스트: 아이콘 가운데 y = 박스 가운데 ±0.5, 글 가운데 y = 박스 가운데 ±1 (두 박스). 테스트 글꼴(Ahem)은 위아래 대칭이라 실제 글꼴 치우침은 앱에서 눈으로 본다.
 - **목표 글은 좌우만 자른다** (2026-11-25 사용자 지적 "목표 박스 안 글자 하단이 잘려 보인다"; 원인: 1.6.0에서 밀려 들어오는 글을 숨기려고 넣은 `ClipRect`가 박스 높이(글자×1.5)에서 위아래까지 잘라, 맑은 고딕 굵은 글자의 아래가 잘림 — 테스트 글꼴 Ahem은 딱 맞아 테스트로는 안 보임). `ClipRect(clipper: HorizontalOnlyClipper())`(Rect(0, −h, w, 2h)). STEP 박스의 ClipRect는 위아래 줄이 보이면 안 되므로 그대로 둔다.
