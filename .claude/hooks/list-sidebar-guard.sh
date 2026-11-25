@@ -7,7 +7,7 @@ input=$(cat)
 case "$input" in *'"stop_hook_active":true'*|*'"stop_hook_active": true'*) active=1 ;; *) active=0 ;; esac
 
 skill=.claude/skills/flow-list-sidebars
-guarded="lib/main.dart lib/services/list_file_service.dart lib/services/run_counter_service.dart lib/widgets/run_counter_panel.dart lib/widgets/goal_list_sidebar.dart lib/widgets/awareness_list_sidebar.dart test/list_file_service_test.dart test/run_counter_service_test.dart test/goal_list_sidebar_test.dart"
+guarded="lib/main.dart lib/services/list_file_service.dart lib/services/run_counter_service.dart lib/widgets/run_counter_panel.dart lib/widgets/list_sidebar.dart lib/widgets/goal_list_sidebar.dart lib/widgets/awareness_list_sidebar.dart test/list_file_service_test.dart test/run_counter_service_test.dart test/goal_list_sidebar_test.dart"
 
 changed=$(git status --porcelain -- $guarded 2>/dev/null | awk '{print $NF}')
 [ -z "$changed" ] && exit 0

@@ -21,7 +21,6 @@ class _SubTopBarState extends State<SubTopBar> {
 
   @override
   Widget build(BuildContext context) {
-    // double horizontalPadding = MediaQuery.of(context).size.width * 0.9;
     double horizontalPadding =700;
     double verticalPadding = MediaQuery.of(context).size.height * 0.12;
     double responsiveFontSize = verticalPadding*0.25;
@@ -52,15 +51,12 @@ class _SubTopBarState extends State<SubTopBar> {
               alignment: Alignment.center, // 컨테이너 내부 요소 중앙 정렬
               height: verticalPadding*0.5,
               padding: const EdgeInsets.symmetric(horizontal: 5,vertical: 5),
-              // Icon(Icons.star, color: Colors.yellow, size: 30.0),
               decoration: BoxDecoration(
                 color: Colors.black.withAlpha(40),
                 borderRadius: BorderRadius.circular(5),
                 border: Border.all(color: Colors.white.withAlpha(50),width: 1),
               ),
-              // double responsiveFontSize = (verticalPadding / 400) * 16,
               child: TextField(
-                // textAlignVertical: TextAlignVertical.center,
                 textAlign: TextAlign.center,
                 controller: _titleController,
                 style: TextStyle(
@@ -68,7 +64,6 @@ class _SubTopBarState extends State<SubTopBar> {
                   color: Colors.white,
                   fontSize: responsiveFontSize,
                   height: verticalPadding*0.02,
-                  // fontWeight: FontWeight.w900,
                 ),
                 decoration: InputDecoration(
                   hintText: "*다음끝장: 단1개 목표 입력...",
@@ -76,7 +71,6 @@ class _SubTopBarState extends State<SubTopBar> {
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(vertical: 1.0, horizontal: 10.0),
-                  // contentPadding: EdgeInsets.symmetric.,
                 ),
               ),
 

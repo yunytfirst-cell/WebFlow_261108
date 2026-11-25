@@ -30,6 +30,7 @@ description: Flow 프로젝트에서 skill(.claude/skills) 기록 규칙과 자�
   6. **주석·문구는 한국어**, 주석은 "왜"를 적는다. `withOpacity` 대신 `withValues(alpha:)`.
   7. **코드 크기 최적화** (2026-11-25 사용자 지시 "모듈화, 코드사이즈 최적화, 실행속도 최적화 점검"): 같은 코드를 늘리지 않는다(두 번 쓰면 함수·공용 위젯으로). 쓰지 않게 된 코드·import·주석 처리된 옛 코드·임시 디버그 출력(`debugPrint('DBG`)은 그 작업에서 지운다. 임시 측정 파일(`test/_tmp/`)은 커밋 전에 지운다. 에셋은 필요한 크기로(예: 과녁 PNG는 바깥 여백을 잘라 정사각형 222px). 새 패키지는 꼭 필요할 때만(이유를 skill에 적음, 예: `integration_test`는 실제 앱 픽셀 검사용 dev 의존성).
   8. **실행 속도 최적화** (같은 지시): 매 프레임·매 build마다 무거운 일을 하지 않는다 — 텍스트 측정(`TextPainter`)·파일 읽기·목록 다시 만들기는 값이 바뀔 때만(예: TopBar `_flattenedLines` 캐시, `_measureIconsRow`는 0.5px 넘게 바뀔 때만 setState). 애니메이션은 바뀌는 부분만 다시 그린다(`TweenAnimationBuilder`·`ListenableBuilder` 범위를 좁게). 바뀌지 않는 위젯은 `const`. 파일 IO는 `async`로, 연속 쓰기는 순서대로 묶는다(`_foldWrite = _foldWrite.then(...)`). `setState`는 필요한 위젯 범위에서만.
+- **"결과는 완전히 동일하게" 정리할 때** (2026-11-25): 바꾸기 전에 실제 앱 화면을 PNG로 찍고(flow-list-sidebars §7의 `identity_snapshot_test.dart`), 바꾼 뒤 다시 찍어 `tools/compare_snapshots.py`로 `모두 같음`을 확인한다. 단위 테스트 통과만으로 "동일"이라고 하지 않는다. 기록: 2026-11-25 두 리스트 사이드바를 공용 `list_sidebar.dart`로 합침(약 800줄 감소), 주석 처리된 옛 코드 16줄 삭제 — 8장 모두 같음.
 - **점검 시점**: 코드를 고친 작업마다 커밋 전에 `git diff`를 보며 7·8번을 확인한다(중복 코드, 남은 디버그·임시 파일, build 안의 무거운 계산, 불필요한 setState). 문제를 찾으면 그 작업 안에서 고치고, 답변의 방법 검토 줄에 `규칙 OK`로 표시한다. 큰 정리(기존 코드 전체 최적화)는 사용자가 요청할 때 따로 한다.
 - 이 목록에 없는 규칙은 해당 작업의 SKILL.md(표 참고: CLAUDE.md Skills)가 정한다. 시작 전에 그 SKILL.md를 grep해 관련 줄을 확인한다.
 

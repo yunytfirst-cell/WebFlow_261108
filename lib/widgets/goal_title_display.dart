@@ -71,7 +71,6 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
       0.0,
       targetWidth,
     );
-    // print("widget.width: ${widget.width}");
 
     // 폭이 바뀔 때(창 크기·처음 측정)는 바로 맞추고, 🎯 상태가 바뀔 때만 서서히 움직이도록
     // 위치 대신 진행값 t(0=오른쪽, 1=왼쪽)를 애니메이션한다.
@@ -90,15 +89,6 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
             height: viewportHeight,
             padding: EdgeInsets.zero,
 
-            // decoration: BoxDecoration(
-            //   color: widget.theme.backgroundColor.withValues(alpha: 0.25),
-            //   borderRadius: BorderRadius.circular(10),
-            //   border: Border.all(
-            //     color: widget.theme.accentColor.withValues(alpha: 0.35),
-            //     width: 1.2,
-            //   ),
-            // ),
-            // alignment: Alignment.center,
             // 2026-11-25 사용자 지시: 목표 글도 끝장 리스트에서 🎯를 눌러야 보인다. 누르기 전에는 과녁 아이콘만
             // 박스 오른쪽에 있고, 누르면 목표 글과 함께 천천히 왼쪽으로 움직인다(아래 STEP 박스와 같은 방식).
             child: Stack(

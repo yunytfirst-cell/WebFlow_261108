@@ -26,6 +26,10 @@ description: Flow 앱의 "성공의 열쇠(끝장 리스트, GoalListSidebar)"�
 
 ## 1. 핵심 규칙: 두 리스트는 구조만 같은 별개 기능
 
+**코드 구조 (2026-11-25 사용자 지시 "모듈화·코드 크기·실행 속도 최적화로 다시 만들되 결과는 완전히 동일")**: 두 사이드바 본체는 공용 파일 `lib/widgets/list_sidebar.dart` 하나다 — `ListSidebarItem`(항목), `ListSidebarSpec`(리스트마다 다른 값, `ListSidebarSpec.goal`·`.awareness` 상수), `ListSidebar<T extends ListSidebarItem>`(StatefulWidget 본체). `goal_list_sidebar.dart`·`awareness_list_sidebar.dart`는 바깥 이름(`GoalListSidebar`·`GoalItem`·`AwarenessListSidebar`·`AwarenessItem`)과 생성자를 그대로 둔 **얇은 StatelessWidget**으로, spec과 `newItem: GoalItem.new` 등만 넘긴다(🎯는 `onSelectItem`이 있을 때만 생김 = 끝장만). 예전에는 거의 같은 코드가 두 파일에 약 1,000줄씩 복사되어 있었다(이름만 바꾸면 937줄 같음). 합친 뒤 lib 코드 약 800줄 감소. 상태(항목·카운터·열린 파일·불러온 폴더)는 위젯 인스턴스마다 따로라 아래 "절대 공유하지 않는 것"은 그대로 지켜진다.
+- `ListSidebarSpec` 값: kind, title, titleHint, itemHint, defaultFileName, logName(오류 로그), accent(끝장 blueAccent / 알아차림 orangeAccent — 제목 글자·항목 그라데이션·선택 테두리·순번 입력칸·접기 박스), panelAlpha(끝장 **220** / 알아차림 200), dockRight(끝장 true: 오른쪽에 붙고 왼쪽 가장자리 드래그·닫기 X는 오른쪽 끝 / 알아차림 false: 반대).
+- 부모 알림은 두 리스트가 같은 묶음을 부른다(합칠 때 정리, 화면 결과 동일): 새로만들기 = onRunRecordsChanged·onFilePathChanged(null)·onTitleChanged('')·onItemsChanged·onSelectItem?('') / 저장 후 onFilePathChanged·onItemsChanged / 불러오기 setState 안 onFilePathChanged·onItemsChanged, 뒤에 onLoadDirectoryChanged·onRunRecordsChanged·onSelectItem?('') / 항목 추가 onItemsChanged / 삭제 onItemsChanged·onDeleteItem?('deleted'). main의 onGoalsChanged·onItemsChanged는 대입만 해서 더 불러도 화면이 같다.
+
 | 항목 | 성공의 열쇠 (끝장 리스트) | 알아차림 리스트 |
 |---|---|---|
 | 위젯 | `GoalListSidebar` (`lib/widgets/goal_list_sidebar.dart`) | `AwarenessListSidebar` (`lib/widgets/awareness_list_sidebar.dart`) |
@@ -112,7 +116,7 @@ final Function(String?) onLoadDirectoryChanged;
 
 - **오토 레이아웃 크기** (2026-11-24 사용자 지시 "슬라이드 안의 텍스트 및 아이콘 오토레이아웃, 글자 작아짐, 불러온 리스트 박스 글자도 작아짐", 두 리스트 동일): 상태 필드 `double _uiScale`와 `_sz(base) => base * _uiScale`. build에서 `currentWidth`를 구한 직후 `_uiScale = (currentWidth / 480).clamp(0.7, 1.0)`. `_sz`를 쓰는 곳: 제목 입력칸 글자·힌트, 동작 버튼(아이콘 14·글자 12·패딩 12/8), 순번 원(radius 12·글자 12)·순번 입력칸(폭 40·글자 12), **항목 글자 14**(`_buildItemText`의 textStyle — 한 줄 넘는지 계산도 같은 크기라 접기 판단이 맞음), 접기 박스(24×20·아이콘 18), 도구 줄 `_iconBtn` 아이콘 18. 제목 줄은 FittedBox가 맞춘다. 기본 폭(화면 1280의 48% = 614)에서는 예전 크기 그대로.
 - 기본 폭 화면의 48% (`_widthRatio = 0.48`), 최소 160(화면이 좁으면 기본 폭), 최대 화면 전체. 가장자리 15px 드래그 영역(`SystemMouseCursors.resizeLeftRight`)으로 폭 조절.
-- 바탕 `Colors.black.withAlpha(200)`, 안쪽 경계선 `Colors.white12` 1.5.
+- 바탕 `Colors.black.withAlpha(spec.panelAlpha)` (끝장 220, 알아차림 200 — 예전 코드 값 그대로), 안쪽 경계선 `Colors.white12` 1.5.
 - 위에서부터: 제목 줄 → 제목 입력칸(orangeAccent, 굵게) → 버튼 `Wrap`(간격 8, 가운데) → `SizedBox(6)` → `Divider(white24, indent 20)` → 항목 `ListView`.
 - **제목 줄** (2026-11-24 사용자 지시 "실행누적 박스를 슬라이드 제목 앞으로, 오토레이아웃"): 끝장 `[Expanded(Center(FittedBox(scaleDown, Row[RunCounterPanel, SizedBox(10), 제목]))), 닫기(X)]`, 알아차림 `[닫기(X), Expanded(같은 묶음)]`. 실행 박스와 제목을 **한 FittedBox로 묶어** 좁으면 함께 줄어든다. 예전 반대편 균형용 `SizedBox(40)`은 없앴다. 제목 글자 크기 `(짧은 변 * 0.03).clamp(11, 18)`.
 - 버튼 순서와 색: 새로만들기(`Icons.note_add`, purpleAccent) · 저장(`Icons.save`, blueAccent) · 불러오기(`Icons.file_open`, greenAccent) · 폴더관리(`Icons.folder`, orangeAccent). `ElevatedButton.icon`, 배경 `color.withValues(alpha: 0.3)`, 아이콘 14, 글자 12 흰색, 모서리 8.
@@ -150,13 +154,15 @@ final Function(String?) onLoadDirectoryChanged;
 
 - 주석과 사용자에게 보이는 문구는 한국어. 주석은 "왜"를 적는다.
 - `Platform.pathSeparator`로 경로를 만든다(저장 경로 조합의 기존 `'$path/$fileName'`은 유지).
-- 같은 일을 하는 두 사이드바 코드는 대칭으로 유지한다. 한쪽을 고치면 다른 쪽도 같은 위치·같은 이름으로 고친다(단, §1의 차이는 유지).
+- 두 사이드바의 동작·화면은 `list_sidebar.dart` 한 곳에서 고친다(자동으로 두 리스트 모두 바뀜). 리스트마다 달라야 하는 값은 `ListSidebarSpec`에 필드를 더하고 `.goal`·`.awareness` 두 상수에 값을 넣는다. 두 래퍼 파일에 기능 코드를 다시 넣지 않는다.
 - 사용자가 한 리스트만 말해도 두 리스트에 함께 적용하고, **답변 첫 부분에 "끝장 리스트·알아차림 리스트 둘 다 적용"과 리스트별 확인 방법을 분명히 쓴다** (2026-11-21: 두 리스트에 다 적용했는데 답변이 끝장 리스트 위주라 사용자가 "알아차림 리스트도 동일하게 적용"을 다시 요청함).
 - 리스트 종류에 따라 달라지는 값은 `ListFileKind`에 두고 하드코딩하지 않는다.
 - `withOpacity` 대신 `withValues(alpha:)`.
 - txt 파일은 UTF-8, 줄바꿈 `\n`.
 
 ## 7. 테스트 (반드시 통과)
+
+- **리팩터링(동작은 그대로, 코드만 정리)일 때 픽셀 동일 검사** (2026-11-25): `integration_test/identity_snapshot_test.dart`가 실제 윈도우 앱으로 두 사이드바(기본·툴박스 펼침·순번 편집)와 상단바(보내기 전·후) 8장을 PNG로 찍는다(커서 깜빡임은 `EditableText.debugDeterministicCursor = true`로 고정 — 안 하면 커서 2px 선 때문에 가끔 다름). ① 바꾸기 전 코드로 `flutter test integration_test/identity_snapshot_test.dart -d windows --dart-define=OUT=build/identity_before` (이미 바꿨으면 `git stash push -q -- lib`로 잠시 되돌려 찍고 `git stash pop`) ② 바꾼 뒤 `OUT=build/identity_after` ③ `python tools/compare_snapshots.py build/identity_before build/identity_after` → `모두 같음`이어야 한다(다르면 `diff_<이름>.png`).
 
 - `test/list_file_service_test.dart`: 종류별 왕복, 접힘 `[FOLDED]` 왕복·`applyFoldState`(디스크 제목/항목/카운터 유지)·예전 파일은 펼침, 폴더·카운터 줄 분리, 다른 리스트 카운터 무시, 예전 번호 형식 읽기, `pickerInitialDirectory` 정규화, `saveTargetPath`(같은 제목 덮어쓰기·다른 제목 새 파일·번호 붙이기·번호 붙은 파일 인정·특수문자·실제 파일 유지).
 - `test/run_counter_service_test.dart`: 줄 생성/읽기, 일반 줄 무시, 접두어가 다른 줄 무시, `todayKey`.
