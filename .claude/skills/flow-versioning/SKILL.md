@@ -62,3 +62,14 @@ description: Flow 앱 버전 번호(pubspec version, lib/app_version.dart), CHAN
 | v1.2.2 | 접기 버튼 상단, 저장 전 고친 항목도 접힘 유지 | 2026-11-21 |
 
 v1.0.x~v1.1.0의 pubspec은 실제로는 `1.0.0+1`이었다(그때는 버전을 안 올렸음). 태그는 나중에 붙인 것이다.
+
+## main에 합치기 (2026-11-25 사용자 지시 "합쳐서 github에 저장해라")
+
+- main에 합치는 것은 **사용자가 말할 때만** 한다(CLAUDE.md: main 직접 push·병합은 먼저 확인). 사용자가 "main에 합친다"의 뜻을 몰라 물었을 때 설명한 말: main = GitHub 첫 화면·다른 PC에서 받을 때의 대표 최신본, 작업 브랜치 = 고치는 중인 것. 합쳐도 지금 PC의 앱·리스트 파일·태그는 그대로.
+- 방법(가장 빠름): main이 작업 브랜치의 조상이면 fast-forward로 그대로 올린다. 병합 커밋·충돌 없음. `gh`는 이 PC에서 로그인 안 되어 있어 PR 방식은 못 씀.
+  ```
+  git fetch origin
+  git merge-base --is-ancestor origin/main HEAD && git push origin HEAD:main
+  ```
+  조상이 아니면(main에 다른 커밋이 있으면) 멈추고 사용자에게 알린다(force push 금지).
+- 2026-11-25: main을 v1.0.0(444e6ef) → v1.6.4(53eb7cb)로 올렸다. 작업은 계속 `feature/sidebar-resize`에서 하고, 사용자가 다시 말하면 같은 방법으로 main을 올린다.
