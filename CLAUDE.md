@@ -6,6 +6,10 @@
 
 **skill을 시작 전, 끝난 뒤 항상 검사하고 기록한다. 말하지 않아도 한다.** (2026-11-21 재지시 "내가 명령하지 않아도, skill에 저장해라") 사용자가 문제·불편을 말하면 고친 뒤 원인과 규칙을 맞는 skill에 저장한다. 맞는 skill이 없으면 새로 만들고 아래 표에 추가한다. 답변에는 어느 skill에 무엇을 저장했는지 한 줄로 보고한다. 시작 전에는 아래 표에서 맞는 SKILL.md를 다시 열고 관련 줄을 grep으로 확인한다. 끝난 뒤에는 `flutter analyze lib test`, `flutter test`로 검토하고 새로 정한 규칙·절차를 SKILL.md에 기록한다.
 
+## 수정 전 (2026-11-25 사용자 지시, 항상)
+
+고치기 전에 빠르고 쉬운 방법을 **2개 이상 비교**하고 가장 쉽고 빠른 방법을 **직접 골라 바로** 진행한다(묻지 않음). 답변에 `방법 검토: A. … / B. … → A 선택 (이유)`만 표시한다. 자세한 규칙: `flow-skill-record`.
+
 ## 작업이 끝나면 (묻지 말고 이 순서로)
 
 1. `flutter analyze lib test` / `flutter test` 통과 (기존 경고 8개만 남아야 함 — main.dart curly_braces 8개. 2026-11-24 goal_title_display viewportHeight 경고 해소)
