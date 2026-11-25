@@ -89,7 +89,11 @@ void main() {
       flagBox.height,
       moreOrLessEquals(tickerBox.height * 0.95, epsilon: 0.5),
     );
-    expect(flagBox.center.dy, moreOrLessEquals(tickerBox.center.dy, epsilon: 0.5));
+    // 깃발 가운데(아이콘 위 72%의 가운데)가 박스 가운데 = STEP 글자 가운데
+    expect(
+      flagBox.top + flagBox.height * 0.36,
+      moreOrLessEquals(tickerBox.center.dy, epsilon: 0.5),
+    );
     // 커져도 상단 컨트롤 아이콘과 겹치지 않는다
     expect(
       flagBox.top,
@@ -289,15 +293,20 @@ void main() {
     expect(clipRect.top, lessThan(0));
     expect(clipRect.bottom, greaterThan(goalRect.height));
     await tester.pumpAndSettle();
-    // 2026-11-25 사용자 지시: 아이콘과 표시 글자는 박스 높이 가운데에 맞춘다
-    for (final (icon, text, box) in [
-      (flag, step, ticker),
-      (target, title, goalBox),
-    ]) {
-      final mid = tester.getCenter(box).dy;
-      expect(tester.getCenter(icon).dy, moreOrLessEquals(mid, epsilon: 0.5));
-      expect(tester.getCenter(text).dy, moreOrLessEquals(mid, epsilon: 1));
-    }
+    // 2026-11-25 사용자 지시 "아이콘 위치만 변경해 글자 가운데에 맞춤". 실제 글꼴 위치는
+    // integration_test/top_bar_center_test.dart(-d windows)가 픽셀로 잰다. 여기서는 배치 값만 본다.
+    final stepMid = tester.getCenter(ticker).dy;
+    final flagRect = tester.getRect(flag);
+    expect(flagRect.top + flagRect.height * 0.36,
+        moreOrLessEquals(stepMid, epsilon: 0.5));
+    final goalRect2 = tester.getRect(goalBox);
+    expect(
+      tester.getCenter(target).dy,
+      moreOrLessEquals(
+        goalRect2.center.dy + goalRect2.height * GoalTitleDisplay.iconDropRatio,
+        epsilon: 0.5,
+      ),
+    );
     // 끝나면 두 아이콘 모두 왼쪽 끝, 글은 아이콘 오른쪽에 보인다
     expect(tester.getTopLeft(flag).dx,
         moreOrLessEquals(tester.getTopLeft(ticker).dx, epsilon: 1));

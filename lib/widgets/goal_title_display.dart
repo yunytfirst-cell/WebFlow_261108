@@ -8,6 +8,9 @@ class GoalTitleDisplay extends StatefulWidget {
   static const String iconAsset = 'assets/images/goal_target.png';
 
   /// 아이콘 크기 ÷ 박스 높이 = FINISH 아이콘과 같음 (TopBarTicker.finishIconScale)
+  /// 아이콘을 박스 가운데에서 아래로 내리는 양 ÷ 박스 높이 (목표 글자의 실제 세로 가운데에 맞춤)
+  static const double iconDropRatio = 0.155;
+
   static const double iconScale =
       0.95 * 1.5 * 2 / 3; // 2026-11-25 사용자 지시 "아이콘 지금의 2/3" → 0.95
 
@@ -154,7 +157,11 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
                 // 과녁 아이콘 (FINISH 아이콘과 같은 크기, 박스 위아래로 넘침)
                 Positioned(
                   left: iconLeft,
-                  top: (viewportHeight - iconSize) / 2,
+                  // 2026-11-25 사용자 지시 "그냥 아이콘 위치만 변경": 실제 윈도우 앱에서 목표 글자는 박스 가운데보다
+                  // 박스 높이의 약 15% 아래에 그려진다(글자 크기 100~160% 모두, integration_test로 측정).
+                  // 글자는 그대로 두고 아이콘을 그만큼 내려 글자 가운데에 맞춘다.
+                  top: (viewportHeight - iconSize) / 2 +
+                      viewportHeight * GoalTitleDisplay.iconDropRatio,
                   width: iconSize,
                   height: iconSize,
                   child: Tooltip(

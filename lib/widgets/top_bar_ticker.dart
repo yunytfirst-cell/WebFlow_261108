@@ -141,7 +141,9 @@ class _TopBarTickerState extends State<TopBarTicker> {
         // 2026-11-25 사용자 지시: 아이콘과 글자는 박스 높이 가운데에 맞춘다.
         Positioned(
           left: iconLeft,
-          top: (viewportHeight - iconH) / 2,
+          // 2026-11-25 사용자 지시 "그냥 아이콘 위치만 변경": 깃발 가운데(아이콘 위 72% 영역의 가운데)가
+          // STEP 글자 가운데(=박스 가운데)에 오도록 아이콘을 내린다. 아래 FINISH 글자는 조금 아래로 나간다.
+          top: (viewportHeight - iconH) / 2 + iconH * FinishFlagIcon.flagCenterDrop,
           width: iconW,
           height: iconH,
           child: FinishFlagIcon(

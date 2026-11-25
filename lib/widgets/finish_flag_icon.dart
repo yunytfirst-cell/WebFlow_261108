@@ -16,6 +16,10 @@ class FinishFlagIcon extends StatelessWidget {
 
   /// 높이 [height]일 때 아이콘 폭 (깃발 폭 = 깃발 높이 72% × 1.5)
   static double widthFor(double height) => height * 0.72 * 1.5;
+
+  /// 아이콘 가운데(0.5)와 깃발 가운데(0.72/2 = 0.36)의 차이 ÷ 아이콘 높이.
+  /// 깃발을 글자 가운데에 맞추려면 아이콘을 이만큼 내린다.
+  static const double flagCenterDrop = 0.5 - 0.72 / 2;
   final Color poleColor;
   final Color textColor;
 

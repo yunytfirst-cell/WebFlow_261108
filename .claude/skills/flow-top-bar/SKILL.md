@@ -54,7 +54,11 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 - 보내기 전(active false): 과녁 아이콘은 목표 박스 **오른쪽 끝**, FINISH 아이콘은 STEP 박스 **오른쪽 끝**. 목표 글·STEP 글은 박스 오른쪽 밖에 있어 `ClipRect`로 보이지 않는다.
 - 🎯 누르면(active true): 두 아이콘이 `TopBarTicker.slideDuration`(1800ms — 2026-11-25 사용자 지시 "이동 속도 지금의 1/2"로 900ms에서 늘림) 동안 `Curves.easeInOutCubic`로 왼쪽 끝까지 움직이고, 글은 **아이콘 오른쪽(간격 fontSize*0.4)에 붙어 함께** 들어온다. 닫으면(선택 해제) 반대로 오른쪽으로 돌아간다.
 - **아이콘 크기 = 박스 높이 × 0.95** (2026-11-25 사용자 지시 "아이콘 지금의 2/3": 0.95×1.5 → ×2/3). `TopBarTicker.finishIconScale`·`GoalTitleDisplay.iconScale` 둘 다 같은 값.
-- **세로 가운데 정렬** (2026-11-25 사용자 지시 "아이콘과 표시 글자는 위치 높이 중앙에 정렬"): 두 아이콘 모두 `top: (박스 높이 − 아이콘 높이)/2`(FINISH 아이콘은 1.5.2~1.6.1에 `bottom: 0`이라 아래로 붙어 있었음). 목표 TextField는 `textAlignVertical: center`, 글자·힌트 `height: 1.0`(STEP 글과 같음; 기본 줄 높이면 맑은 고딕 글자가 위로 치우침). 테스트: 아이콘 가운데 y = 박스 가운데 ±0.5, 글 가운데 y = 박스 가운데 ±1 (두 박스). 테스트 글꼴(Ahem)은 위아래 대칭이라 실제 글꼴 치우침은 앱에서 눈으로 본다.
+- **세로 정렬 = 아이콘을 글자 가운데에** (2026-11-25 사용자 지시 "아이콘과 표시 글자는 높이 중앙 정렬" → 지적 "글자 중앙이 맞지 않는다"(스크린샷에 빨간 선) → "그냥 아이콘 위치만 변경하면 안되나?"). 글자는 손대지 않고 **아이콘만 옮긴다**. 목표 TextField는 `textAlignVertical: center`, 글자·힌트 `height: 1.0` 그대로.
+  - 과녁: `top = (박스 높이 − 아이콘)/2 + 박스 높이 × GoalTitleDisplay.iconDropRatio(0.155)`. 실제 윈도우 앱에서 목표 입력칸 글자는 박스 가운데보다 박스 높이의 약 15%(1280×800에서 5.3px) 아래에 그려진다(글자 크기 100·130·160% 모두 같음).
+  - FINISH: `top = (박스 높이 − 아이콘)/2 + 아이콘 × FinishFlagIcon.flagCenterDrop(0.5 − 0.36 = 0.14)` → **깃발 가운데**(아이콘 위 72%의 가운데)가 STEP 글자 가운데(=박스 가운데)에 온다. 사용자는 FINISH 글자 포함 전체가 아니라 깃발 그림을 기준으로 본다. 아래 FINISH 글자는 조금 내려가지만 잘리지 않는다.
+  - 처음엔 글자 쪽(Strut 끄기, OverflowBox로 입력칸 가운데 맞춤)을 고치려다 효과가 없거나 작아 되돌렸다. 글자 위치를 고치려 하지 말고 아이콘을 옮긴다.
+- **실제 앱 픽셀 검사** `integration_test/top_bar_center_test.dart` (dev_dependencies에 `integration_test: sdk: flutter`): `flutter test integration_test/top_bar_center_test.dart -d windows [--dart-define=TEXT_SCALE=1.3]`(약 30초). 실제 윈도우 글꼴·DPI(이 PC 1.25)·윈도우 "텍스트 크기"(이 PC 130%, `HKCU\Software\Microsoft\Accessibility\TextScaleFactor`)로 TopBar를 그려 RepaintBoundary 픽셀에서 글자·과녁·깃발(흰 픽셀만)의 세로 가운데를 재고 차이 2px 미만이면 통과. 결과 `build/top_bar_center_report.txt`, 그림 `build/top_bar_center.png`(검은 바탕). 일반 `flutter test`의 Ahem 글꼴은 위아래 대칭이라 이런 치우침이 안 보이고, FontLoader로 맑은 고딕을 넣어도 실제 앱과 달랐다 → 글자 위치 문제는 이 검사로 본다.
 - **목표 글은 좌우만 자른다** (2026-11-25 사용자 지적 "목표 박스 안 글자 하단이 잘려 보인다"; 원인: 1.6.0에서 밀려 들어오는 글을 숨기려고 넣은 `ClipRect`가 박스 높이(글자×1.5)에서 위아래까지 잘라, 맑은 고딕 굵은 글자의 아래가 잘림 — 테스트 글꼴 Ahem은 딱 맞아 테스트로는 안 보임). `ClipRect(clipper: HorizontalOnlyClipper())`(Rect(0, −h, w, 2h)). STEP 박스의 ClipRect는 위아래 줄이 보이면 안 되므로 그대로 둔다.
 - 구현: 바깥 `SizedBox(박스 폭, 박스 높이)` → `Stack(clipBehavior: none)[ Positioned.fill(ClipRect(Stack[ Positioned(left: iconLeft+아이콘폭+간격, 글) ])), Positioned(left: iconLeft, 아이콘) ]`. iconLeft = `(박스 폭 − 아이콘 폭) × (1 − t)`, t는 `TweenAnimationBuilder<double>(tween: Tween(end: active ? 1 : 0))`의 진행값.
   - **AnimatedPositioned를 쓰지 않는 이유**(사용자에게 보인 문제는 아니고 테스트에서 잡음): 시작 직후 목표바 폭을 다시 재면(700→592) AnimatedPositioned가 새 위치로 0.9초 동안 미끄러져, 🎯를 안 눌러도 아이콘이 움직였다. 진행값만 애니메이션하면 폭 변화는 바로 반영되고 🎯 상태 변화만 서서히 움직인다.
@@ -75,7 +79,7 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 - `FinishFlagIcon(height: viewportHeight * TopBarTicker.finishIconScale, …)` — `finishIconScale = 0.95 * 1.5` (2026-11-25 사용자 지시 "아이콘 지금의 1.5배"). 박스보다 크므로 `OverflowBox(maxHeight: 그 높이, alignment: bottomCenter)`로 감싸 **아래 끝은 박스 아래 끝, 위로 넘치게** 한다. 티커 Stack은 `clipBehavior: Clip.none`, ClipRect는 STEP 목록(ListView)에만 둔다(아이콘까지 감싸면 잘림). STEP 박스 위치·크기는 그대로. 1280×800에서 아이콘 위 끝(137.6)은 목표 박스 아래 끝(120.7)보다 아래라 겹치지 않는다. poleColor: theme.textColor, textColor: theme.accentColor, 툴팁 `ITEM FINISH`. 위 72% = 깃발(폭 = 높이×1.5, `CustomPainter`), 아래 = `FINISH`(w900, 자간 2, 깃발 폭의 80%에 FittedBox).
 - 깃발 그리기: 설계 좌표 120×80, 왼쪽 깃대 (50,3)→(74,79) 굵기 4 둥근 끝, 깃발 네 모서리 (50,3)·(62,44)·(6,56)·(1,14)를 쌍선형으로 7×5칸 나눠 흑/백 번갈아 칠하고 흰 테두리 1.5. 오른쪽은 x → 120−x 반전(깃대가 X로 교차).
 - 모양 확인법: 임시 테스트에서 `RepaintBoundary`+`matchesGoldenFile` 후 `--update-goldens`로 PNG를 만들어 Read로 보고 지운다(테스트 글꼴이라 글자는 네모로 보임). 첫 버전은 깃발이 작고 글자가 넓어서 비율을 고쳤다.
-- 테스트: `ITEM FINISH` 글자 없음, `FinishFlagIcon` 하나, 가운데 x가 티커 가운데와 1 이내, 높이 = 티커 높이×0.95×1.5, 세로 가운데 = 티커 세로 가운데, 위 끝이 설정 아이콘·목표 박스보다 아래.
+- 테스트: `ITEM FINISH` 글자 없음, `FinishFlagIcon` 하나, 가운데 x가 티커 가운데와 1 이내, 높이 = 티커 높이×0.95×1.5, 깃발 가운데 = 티커 세로 가운데, 위 끝이 설정 아이콘·목표 박스보다 아래.
 
 ## 주의
 
