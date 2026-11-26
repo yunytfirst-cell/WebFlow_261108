@@ -119,12 +119,15 @@ void main() {
 
     final goalTextMid = inkMid(goalBox, goalText.left, goalBox.right, bright);
     final goalIconMid = inkMid(goalBox, target.left, target.right, bright);
+    final label = tester.getRect(find.text(GoalTitleDisplay.label));
+    final labelMid = inkMid(goalBox, label.left, label.right, bright);
     final stepTextMid = inkMid(stepBox, stepText.left, stepBox.right - 90, bright);
     final flagsMid = inkMid(stepBox, flag.left, flag.right, white);
 
     final report = [
       'dpr $dpr textScale $scale',
       'goal textMid ${goalTextMid.toStringAsFixed(1)} iconMid ${goalIconMid.toStringAsFixed(1)} diff ${(goalIconMid - goalTextMid).toStringAsFixed(1)}',
+      'goal labelMid ${labelMid.toStringAsFixed(1)} diff ${(labelMid - goalTextMid).toStringAsFixed(1)}',
       'step textMid ${stepTextMid.toStringAsFixed(1)} flagsMid ${flagsMid.toStringAsFixed(1)} diff ${(flagsMid - stepTextMid).toStringAsFixed(1)}',
     ].join('\n');
     // ignore: avoid_print
@@ -135,5 +138,7 @@ void main() {
 
     expect((goalIconMid - goalTextMid).abs(), lessThan(2.0), reason: report);
     expect((flagsMid - stepTextMid).abs(), lessThan(2.0), reason: report);
+    // 2026-11-26: "목표>" 글자 가운데 = 목표 글 가운데
+    expect((labelMid - goalTextMid).abs(), lessThan(2.0), reason: report);
   });
 }

@@ -89,5 +89,7 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 
 ## "목표" 글자 (2026-11-26 사용자 지시 "메인화면 목표 아이콘 다음에 목표 글자 추가")
 - `GoalTitleDisplay.label = '목표>'`(2026-11-26 사용자 지시 "목표 → 목표>, 하단 글자 크기와 동일")를 과녁 아이콘 바로 뒤(간격 `fontSize*0.4`)에 둔다. 글자 크기 = **하단 STEP 글자와 같은 `fontSize × TopBarTicker.textScale`(2/3)**, 굵게, height 1.0, textColor (처음 1.7.0에는 '목표'·목표 입력 글 크기였음), `Positioned(top 0, bottom 0) + Align(centerLeft)`.
-- 아이콘·간격·"목표"·간격이 **한 묶음**(`headWidth`)으로 움직인다: `iconLeft = (박스폭 − 아이콘 − 간격 − 글자폭) × (1 − t)` → 🎯 보내기 전에도 "목표" 글자가 아이콘과 함께 **오른쪽 끝**에 보이고(글자 오른쪽 끝 = 박스 오른쪽 끝), 목표 입력 글은 `iconLeft + headWidth`에서 시작한다. 글자 폭은 `TextPainter`로 재고 바로 `dispose()`.
+- **세로 위치** (2026-11-26 사용자 지적 스크린샷 "목표>의 중앙 위치로 배치"; 원인: 일반 Text는 박스 가운데에 그려지는데 목표 입력 글(TextField)과 과녁 아이콘은 박스 높이 × `iconDropRatio`(0.155)만큼 아래라 "목표>"만 위로 떠 보였음): "목표>" Positioned를 `top: labelDrop, bottom: -labelDrop`(labelDrop = 박스 높이 × iconDropRatio)으로 내린다. 실제 앱 픽셀 검사(`integration_test/top_bar_center_test.dart`, 글자 130%)에서 "목표>" 가운데 − 목표 글 가운데 = 0.4px(2 미만이어야 통과).
+- **"목표>" 뒤 간격 = 탭 간격** (2026-11-26 사용자 지시 "> 다음 공간을 탭 간격으로 넓혀라"): `fontSize × GoalTitleDisplay.labelTrailingGapRatio`(1.2, 목표 글 공백 약 4칸). 아이콘과 글자 사이는 그대로 `fontSize*0.4`.
+- 아이콘·간격·"목표"·간격이 **한 묶음**(`headWidth` = 아이콘 + 0.4 간격 + 글자폭 + 탭 간격)으로 움직인다: `iconLeft = (박스폭 − 아이콘 − 간격 − 글자폭) × (1 − t)` → 🎯 보내기 전에도 "목표" 글자가 아이콘과 함께 **오른쪽 끝**에 보이고(글자 오른쪽 끝 = 박스 오른쪽 끝), 목표 입력 글은 `iconLeft + headWidth`에서 시작한다. 글자 폭은 `TextPainter`로 재고 바로 `dispose()`.
 - 테스트(`top_bar_test`): 글자 = `목표>`, 글자 크기 = 목표 fontSize × textScale, 보내기 전 "목표>" 오른쪽 끝 = 박스 오른쪽 끝, 글자 왼쪽 > 아이콘 오른쪽, 간격 < 아이콘 폭. (예전 "아이콘 오른쪽 끝 = 박스 오른쪽 끝" 검사는 이 규칙으로 바뀜)

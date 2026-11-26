@@ -15,6 +15,9 @@ class GoalTitleDisplay extends StatefulWidget {
   /// 2026-11-26 사용자 지시 "목표 → 목표>, 하단(STEP) 글자 크기와 동일" → 크기 = fontSize × TopBarTicker.textScale
   static const String label = '목표>';
 
+  /// "목표>" 뒤 간격 ÷ fontSize = 탭 간격(목표 글 공백 약 4칸) (2026-11-26 사용자 지시)
+  static const double labelTrailingGapRatio = 1.2;
+
   static const double iconScale =
       0.95 * 1.5 * 2 / 3; // 2026-11-25 사용자 지시 "아이콘 지금의 2/3" → 0.95
 
@@ -85,7 +88,12 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
     )..layout();
     final double labelWidth = labelPainter.width;
     labelPainter.dispose();
-    final double headWidth = iconSize + gap + labelWidth + gap;
+    // 2026-11-26 사용자 지시 "> 다음 공간을 탭 간격으로 넓혀라"
+    final double labelGap = widget.fontSize * GoalTitleDisplay.labelTrailingGapRatio;
+    final double headWidth = iconSize + gap + labelWidth + labelGap;
+    // 2026-11-26 사용자 지시 "목표>를 중앙 위치로": 일반 Text는 박스 가운데에 그려지지만 목표 입력 글(TextField)은
+    // 박스 높이의 iconDropRatio만큼 아래에 그려진다(아이콘도 그만큼 내림). "목표>"도 같은 양만큼 내린다.
+    final double labelDrop = viewportHeight * GoalTitleDisplay.iconDropRatio;
     final double textWidth = (targetWidth - headWidth).clamp(0.0, targetWidth);
 
     // 폭이 바뀔 때(창 크기·처음 측정)는 바로 맞추고, 🎯 상태가 바뀔 때만 서서히 움직이도록
@@ -165,8 +173,8 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
                 // "목표" 글자 (아이콘 바로 뒤, 목표 입력 글과 같은 글자·세로 정렬)
                 Positioned(
                   left: iconLeft + iconSize + gap,
-                  top: 0,
-                  bottom: 0,
+                  top: labelDrop,
+                  bottom: -labelDrop,
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(GoalTitleDisplay.label, style: labelStyle),
