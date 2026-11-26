@@ -70,6 +70,7 @@ host=github.com
 - 빌드 기록: v1.3.8+23 → 새 노란 아이콘, `dist\Flow.exe` (2026-11-24).
 - 빌드 기록: v1.3.7+22 → `dist\Flow.exe` 16.4MB, 파일 30개, 창 제목 `Flow v1.3.7` 확인 (2026-11-24). 바탕화면에 사용자가 옮겨 둔 옛 exe(`flow_single_26112103.exe`, v1.2.2)가 함께 떠 있었다 — 건드리지 않고, 새 버전은 `dist\Flow.exe`라고 알려준다.
 - 빌드 기록: v1.6.4+34 → `dist\Flow.exe` 16.5MB, 파일 버전 1.6.4+34, 단일 exe 창 제목 `Flow v1.6.4` 확인 (2026-11-25).
+- 빌드 기록: v1.7.3+39 → `--skip-build`(run_app 빌드가 마지막 코드 커밋보다 나중), `distFlow.exe` 16.5MB, 파일 버전 1.7.3+39, 창 제목 `Flow v1.7.3` 확인 (2026-11-26).
 - 빠른 방법(2026-11-25): `build/windows/x64/runner/Release/flow.exe` 시각이 마지막 앱 코드 커밋(`git log -1 --format=%cd -- lib pubspec.yaml windows assets`)보다 나중이면 `--skip-build`로 묶기만 한다(작업 끝마다 run_app.py가 이미 릴리스 빌드함). 아니면 그냥 `python tools/build_exe.py`.
 - 사용자는 "실행파일들것"처럼 줄여·오타로 요청하기도 한다 → "실행파일 만들 것"으로 보고 묻지 않고 이 절차를 실행한다.
 - 버전 확인은 `$v=(Get-Item dist\Flow.exe).VersionInfo; "$($v.FileVersion)"`처럼 문자열로 찍는다(`Select` 표 출력은 줄이 잘려 `1`만 보일 때가 있었음).
