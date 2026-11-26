@@ -32,6 +32,13 @@ python tools/build_exe.py --skip-build # 이미 빌드된 결과로 묶기만
 3. Enigma 설정(.evb)은 **매번 현재 `dist\Flow` 파일 목록으로 새로 생성**한다. 예전 `dist\flow_single.evb`, `dist\flow_release.evb`는 파일 목록이 옛 빌드에 고정되어 있어 쓰지 않는다. 입력 `dist\Flow\flow.exe`, 출력 `dist\Flow.exe`, 파일 압축 켬, 레지스트리 가상화 끔.
 4. `C:\Program Files (x86)\Enigma Virtual Box\enigmavbconsole.exe <evb>`로 묶고, 출력에 `successfully saved`가 없으면 실패로 끝낸다.
 
+## 사용자가 Enigma 창으로 직접 묶은 exe 오류 (2026-11-26 사용자 지적 "단일 실행파일 만들고 폴더 이동 후 실행하면 `Cannot load library audioplayers_windows_plugin.dll` 팝업, 전에는 문제 없었다")
+
+- 원인: 사용자가 Enigma 창에서 `build\windows\x64\runner\Release\enigma.evb`(2026-11-25 저장, 사용자 파일)로 `flow_single.exe`를 만들었다. 이 설정은 ① 파일 목록이 그때 Release 폴더에 고정(예전 `flow_single_*.exe`까지 넣음 — 11-25 결과가 1GB), ② VC++ 런타임(msvcp140·vcruntime140·vcruntime140_1) 없음, ③ 압축 끔. 그런데 11-26 결과는 14.5MB로 flutter_windows.dll·app.so 등 필요한 파일이 실제로는 다 들어가지 않았다. **Release 폴더 안에서 실행하면 빠진 dll을 옆의 진짜 파일로 찾아 문제가 안 보이다가**, 바탕화면으로 옮기면 dll이 없어 팝업이 뜬다("전에는 괜찮았다"의 이유).
+- 확인: 두 exe를 빈 폴더로 복사해 실행 → 사용자 `flow_single.exe`는 바로 종료, `dist\Flow.exe`(스크립트)는 창 제목 `Flow v1.7.3`으로 정상.
+- 해결: Enigma 창·예전 `.evb`를 쓰지 말고 **`tools\build_exe.bat`(= `python tools/build_exe.py`)의 `dist\Flow.exe`를 옮겨 쓴다**. 스크립트는 매번 현재 `dist\Flow` 목록으로 evb를 새로 만들고 VC++ 런타임도 넣는다.
+- 단일 exe 검사는 항상 **빌드 폴더가 아닌 빈 폴더로 복사해서** 실행한다(빌드 폴더에서는 빠진 파일이 가려진다).
+
 ## 앱 아이콘 (2026-11-24 사용자 지적 "실행파일 아이콘이 너무 작아 안 보인다, 노란 메모 아이콘처럼 크고 잘 보이게")
 
 - 원인: 예전 아이콘은 어두운 남색 바탕에 얇은 노란 링이라, 작업표시줄·바탕화면 크기에서 검은 동그라미처럼 보였다.
