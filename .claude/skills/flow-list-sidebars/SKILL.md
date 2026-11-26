@@ -71,6 +71,13 @@ description: Flow 앱의 "성공의 열쇠(끝장 리스트, GoalListSidebar)"�
 
 file_picker 8.3.7의 Windows `pickFiles`는 `GetOpenFileNameW`를 쓴다. 시작 폴더 문자열이 앱이 처음 넘긴 값과 같으면 Windows가 그것을 무시하고 **앱 전체에서 마지막으로 연 폴더**를 보여준다. 그러면 다른 리스트에서 연 폴더가 나타나므로, 시작 폴더는 반드시 `ListFileService.pickerInitialDirectory()`(구분자 정규화 + 끝에 구분자)를 거쳐 넘긴다.
 
+### 바깥 내용으로 리스트 파일 만들기 (2026-11-26 사용자 지시 "엑셀 단하나 시트를 '나는 ~이다!'로 정리해 알아차림 폴더에 '단하나' 파일로")
+
+- 저장 폴더: 이 PC의 문서 폴더는 OneDrive라서 알아차림 = `C:\Users\yunyt\OneDrive\문서\FlowAwareness`, 끝장 = `…\OneDrive\문서\FlowSchedules`(`getApplicationDocumentsDirectory`). 같은 이름 파일이 있으면 덮어쓰기 전에 확인한다.
+- 형식: `ListFileService.serialize`와 같다 — `[AWARE]: 제목` → 항목마다 `[AWARE_ITEM:n]` / 글 / `[END_AWARE_ITEM]`(카운터 줄은 없어도 됨), UTF-8, 줄바꿈 LF. python으로 만든 뒤 **앱의 `ListFileService.parse`로 읽히는지** 임시 테스트(`test/zz_tmp_…_test.dart`, 확인 후 삭제)로 검사한다.
+- 엑셀이 열려 있으면 파일이 잠겨 openpyxl로 열 수 없다(PermissionError) → 복사본으로 읽는다. 쓰기는 Windows PowerShell 5(`powershell.exe` — pwsh 7에는 `Marshal.GetActiveObject`가 없음)로 실행 중인 Excel COM을 쓴다: `$wb.Saved`가 True일 때만 진행 → `SaveCopyAs(백업)` → 시트 `UsedRange.Clear()` → 2차원 배열로 한 번에 `Value2` → `Save()`. OneDrive 파일은 `$wb.FullName`이 https 주소라 `Join-Path`가 실패하므로 백업 경로는 PC 경로를 직접 쓴다. 한글이 든 .ps1은 UTF-8 **BOM**으로 저장한다. 긴 한국어·경로 문자열을 bash heredoc 안 python에 넣으면 `\U`·`\\`가 깨지므로 Write 도구로 .py 파일을 만든다.
+- 정리 규칙(단하나): 위가 가장 높은 순위 → 겹치는 문장은 **처음 나온 위치**에 합친다. 모든 줄 `나는 … 이다!`(동사 문장은 `…하는 사람이다!`), 맞춤법은 고치고 URL·제목 줄(예: "성공한 사람들")은 빼거나 내용에 합친다. 결과: 원본 593행 → 178문장(엑셀 A=순위, B=문장). 원본 백업 `2026년_1조1H_Top Priority_단하나정리전_백업_20261126.xlsx`.
+
 ## 3. 상태 소유 (main.dart `_MainAreaState`)
 
 ```dart
