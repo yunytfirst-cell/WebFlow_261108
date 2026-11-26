@@ -37,8 +37,17 @@ def is_packaging_leftover(name):
 
 
 def run_flutter_build():
+    # 2026-11-26 사용자 지적: 개발용 Release\flow.exe가 떠 있으면 LNK1104(exe 잠김)로 빌드 실패.
+    # run_app.py와 같은 방법으로 build 폴더의 flow.exe만 닫는다(dist\Flow.exe는 건드리지 않음).
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from run_app import close_running
+    close_running()
     print('> flutter build windows --release')
-    subprocess.run('flutter build windows --release', cwd=ROOT, shell=True, check=True)
+    command = 'flutter build windows --release'
+    if subprocess.run(command, cwd=ROOT, shell=True).returncode != 0:
+        # 첫 빌드가 C1083(ephemeral 파일 누락)·잠금 해제 지연으로 가끔 실패한다 → 한 번만 다시 (flow-run-app)
+        print('> 빌드 실패 — 한 번 다시 시도')
+        subprocess.run(command, cwd=ROOT, shell=True, check=True)
 
 
 def sync_app_dir():

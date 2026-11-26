@@ -13,6 +13,10 @@ python tools/build_exe.py --skip-build # 이미 빌드된 결과로 묶기만
 ```
 사용자는 `tools\build_exe.bat`을 더블클릭해도 된다. 새로 스크립트를 짜거나 예전 `.evb`를 손으로 고치지 않는다.
 
+- **bat 파일 규칙** (2026-11-26 사용자 지적: 더블클릭하자 `'��릭' is not recognized` 오류): 원인은 bat의 한국어 주석이 UTF-8 + LF 줄끝이라 cmd(CP949로 읽음)가 줄을 잘못 나눠 주석 일부를 명령으로 실행한 것. **bat은 ASCII만, CRLF 줄끝**으로 쓴다. `.gitattributes`에 `*.bat text eol=crlf`. 한국어 설명은 py 파일에 둔다.
+- **빌드 전 실행 중인 개발용 앱 닫기** (같은 날 지적: `LNK1104: cannot open file ...Release\flow.exe`): 원인은 작업 끝마다 run_app.py로 띄운 `build\...\Release\flow.exe`가 떠 있어 링커가 exe를 덮어쓰지 못한 것. `run_flutter_build()`가 `run_app.close_running()`을 불러 build 폴더 flow.exe만 닫는다(dist\Flow.exe는 그대로). 첫 빌드가 실패하면 **한 번 자동으로 다시** 빌드한다(C1083·잠금 해제 지연, flow-run-app과 같은 현상).
+- 검사: 개발용 앱을 띄운 상태에서 `cmd //c "tools\\build_exe.bat < nul"` → `> 실행 중이던 Flow 종료`, 빌드·묶기 성공, 빈 폴더로 복사한 dist\Flow.exe 창 제목 `Flow v1.7.3` (2026-11-26).
+
 ## 결과물
 
 | 경로 | 설명 |

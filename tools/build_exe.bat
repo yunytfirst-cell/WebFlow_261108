@@ -1,5 +1,5 @@
 @echo off
-rem Flow 실행파일 만들기 (더블클릭 또는 터미널에서 실행)
+rem Build Flow single exe (double-click). Comments must stay ASCII: cmd reads .bat as CP949.
 cd /d "%~dp0.."
 python tools\build_exe.py %*
 pause
