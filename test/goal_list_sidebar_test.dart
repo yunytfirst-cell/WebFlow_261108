@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flow/widgets/awareness_list_sidebar.dart';
 import 'package:flow/widgets/goal_list_sidebar.dart';
 import 'package:flow/widgets/list_sidebar.dart';
@@ -5,13 +7,91 @@ import 'package:flow/widgets/run_counter_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// 실제 리스트 파일(빈 내용) 하나를 임시 폴더에 만들고 경로를 돌려준다.
+String tempListFile() {
+  final dir = Directory.systemTemp.createTempSync('flow_run_');
+  final file = File('${dir.path}${Platform.pathSeparator}리스트.txt')
+    ..writeAsStringSync('');
+  addTearDown(() => dir.deleteSync(recursive: true));
+  return file.path;
+}
+
 void main() {
+  // 2026-11-26 사용자 지시: 내용이 없거나 불러온 파일이 없으면 실행 누적 화살표가 동작하지 않는다 (두 리스트)
+  testWidgets('두 리스트: 내용이나 파일이 없으면 실행 화살표가 멈춘다', (tester) async {
+    for (final (hasFile, title, text, works) in [
+      (false, '', '', false),
+      (false, '제목', '내용', false),
+      (true, '', '', false),
+      (true, '', '내용', true),
+      (true, '제목', '', true),
+    ]) {
+      for (final goal in [true, false]) {
+        final records = <String, int>{};
+        final path = hasFile ? tempListFile() : null;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: goal
+                  ? GoalListSidebar(
+                      runRecords: records,
+                      onRunRecordsChanged: () {},
+                      onLoadDirectoryChanged: (_) {},
+                      onSelectGoal: (_) {},
+                      onDeleteGoal: (_) {},
+                      onClose: () {},
+                      initialTitle: title,
+                      initialGoals: [GoalItem(text: text)],
+                      onTitleChanged: (_) {},
+                      onGoalsChanged: (_) {},
+                      initialFilePath: path,
+                      onFilePathChanged: (_) {},
+                    )
+                  : AwarenessListSidebar(
+                      runRecords: records,
+                      onRunRecordsChanged: () {},
+                      onLoadDirectoryChanged: (_) {},
+                      onClose: () {},
+                      initialTitle: title,
+                      initialItems: [AwarenessItem(text: text)],
+                      initialFilePath: path,
+                      onTitleChanged: (_) {},
+                      onItemsChanged: (_) {},
+                      onFilePathChanged: (_) {},
+                    ),
+            ),
+          ),
+        );
+        final upIcon = find.byWidgetPredicate(
+          (w) => w is Icon && w.icon == Icons.keyboard_arrow_up && w.size == 20,
+        );
+        await tester.tap(upIcon);
+        await tester.pump();
+        final reason = 'goal=$goal file=$hasFile title=$title text=$text';
+        expect(
+          records.values.fold<int>(0, (a, b) => a + b),
+          works ? 1 : 0,
+          reason: reason,
+        );
+        expect(
+          find.byTooltip(RunCounterPanel.disabledTooltip),
+          works ? findsNothing : findsNWidgets(2),
+          reason: reason,
+        );
+        // 다른 사이드바로 바꿀 때 상태가 섞이지 않도록 비운다
+        await tester.pumpWidget(const SizedBox());
+      }
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('알아차림 리스트는 자신에게 전달된 실행 카운터만 변경한다', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final runRecords = <String, int>{};
+    final file = tempListFile();
 
     await tester.pumpWidget(
       MaterialApp(
@@ -22,8 +102,8 @@ void main() {
             onLoadDirectoryChanged: (_) {},
             onClose: () {},
             initialTitle: '',
-            initialItems: [AwarenessItem()],
-            initialFilePath: null,
+            initialItems: [AwarenessItem(text: '내용')],
+            initialFilePath: file,
             onTitleChanged: (_) {},
             onItemsChanged: (_) {},
             onFilePathChanged: (_) {},
@@ -61,11 +141,11 @@ void main() {
             onSelectGoal: (_) {},
             onDeleteGoal: (_) {},
             onClose: () {},
-            initialTitle: '',
+            initialTitle: '제목',
             initialGoals: [GoalItem()],
             onTitleChanged: (_) {},
             onGoalsChanged: (_) {},
-            initialFilePath: null,
+            initialFilePath: tempListFile(),
             onFilePathChanged: (_) {},
           ),
         ),
@@ -276,8 +356,10 @@ void main() {
       (awarenessSidebar([AwarenessItem()]), '👁️ 알아차림 리스트'),
     ]) {
       await tester.pumpWidget(sidebar);
-      final up = tester.getCenter(find.byTooltip('오늘 실행 횟수 늘리기'));
-      final down = tester.getCenter(find.byTooltip('오늘 실행 횟수 줄이기'));
+      // 파일이 없어 화살표가 멈춘 상태(툴팁 = 멈춘 이유). 위치만 본다.
+      final arrows = find.byTooltip(RunCounterPanel.disabledTooltip);
+      final up = tester.getCenter(arrows.first);
+      final down = tester.getCenter(arrows.last);
       expect(
         up.dx,
         greaterThan(tester.getTopRight(find.textContaining('누적')).dx),
@@ -422,28 +504,30 @@ void main() {
     setWide(tester);
     final goals = [GoalItem(text: 'A'), GoalItem(text: 'B')];
     var selected = '';
-    await tester.pumpWidget(StatefulBuilder(
-      builder: (context, setState) => MaterialApp(
-        home: Scaffold(
-          body: GoalListSidebar(
-            runRecords: {},
-            onRunRecordsChanged: () {},
-            onLoadDirectoryChanged: (_) {},
-            selectedGoal: selected,
-            onSelectGoal: (g) =>
-                setState(() => selected = selected == g ? '' : g),
-            onDeleteGoal: (_) {},
-            onClose: () {},
-            initialTitle: '',
-            initialGoals: goals,
-            onTitleChanged: (_) {},
-            onGoalsChanged: (_) {},
-            initialFilePath: null,
-            onFilePathChanged: (_) {},
+    await tester.pumpWidget(
+      StatefulBuilder(
+        builder: (context, setState) => MaterialApp(
+          home: Scaffold(
+            body: GoalListSidebar(
+              runRecords: {},
+              onRunRecordsChanged: () {},
+              onLoadDirectoryChanged: (_) {},
+              selectedGoal: selected,
+              onSelectGoal: (g) =>
+                  setState(() => selected = selected == g ? '' : g),
+              onDeleteGoal: (_) {},
+              onClose: () {},
+              initialTitle: '',
+              initialGoals: goals,
+              onTitleChanged: (_) {},
+              onGoalsChanged: (_) {},
+              initialFilePath: null,
+              onFilePathChanged: (_) {},
+            ),
           ),
         ),
       ),
-    ));
+    );
     List<Color?> colors() => tester
         .widgetList<Icon>(find.byIcon(Icons.gps_fixed))
         .map((i) => i.color)

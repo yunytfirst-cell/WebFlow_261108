@@ -7,6 +7,7 @@ class RunCounterPanel extends StatefulWidget {
     required this.runRecords,
     required this.onRecordsChanged,
     this.savedDate,
+    this.enabled = true,
     super.key,
   });
 
@@ -17,6 +18,15 @@ class RunCounterPanel extends StatefulWidget {
   /// 열린 파일이 없으면 null이고 날짜를 보이지 않는다.
   final DateTime? savedDate;
 
+  /// 화살표를 누를 수 있는지 (2026-11-26 사용자 지시: 리스트 내용이 없거나 불러온 파일이 없으면 멈춤).
+  final bool enabled;
+
+  /// 화살표를 누를 수 없을 때의 툴팁
+  static const disabledTooltip = '리스트 파일을 불러오거나 저장한 뒤 쓸 수 있습니다';
+
+  /// 멈춘 화살표의 흐림 정도
+  static const disabledOpacity = 0.3;
+
   @override
   State<RunCounterPanel> createState() => _RunCounterPanelState();
 }
@@ -26,6 +36,7 @@ class _RunCounterPanelState extends State<RunCounterPanel> {
   int get _totalCount => RunCounterService.total(widget.runRecords);
 
   void _changeRunCount(int delta) {
+    if (!widget.enabled) return;
     final next = (_todayCount + delta).clamp(0, RunCounterService.maxCount);
     if (next == _todayCount) return;
     setState(() {
@@ -120,15 +131,22 @@ class _RunCounterPanelState extends State<RunCounterPanel> {
     required VoidCallback onPressed,
   }) {
     // IconButton은 최소 터치 크기 48로 늘어나 박스가 높아지므로 28×18 고정 버튼을 쓴다(세로 2개 = 36).
+    final enabled = widget.enabled;
     return Tooltip(
-      message: tooltip,
+      message: enabled ? tooltip : RunCounterPanel.disabledTooltip,
       child: InkWell(
-        onTap: onPressed,
+        onTap: enabled ? onPressed : null,
         borderRadius: BorderRadius.circular(4),
         child: SizedBox(
           width: 28,
           height: 18,
-          child: Icon(icon, color: color, size: 20),
+          child: Icon(
+            icon,
+            color: enabled
+                ? color
+                : color.withValues(alpha: RunCounterPanel.disabledOpacity),
+            size: 20,
+          ),
         ),
       ),
     );

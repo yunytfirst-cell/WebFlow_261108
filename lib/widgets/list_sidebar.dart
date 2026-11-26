@@ -144,12 +144,16 @@ class ListSidebar<T extends ListSidebarItem> extends StatefulWidget {
   /// 🎯 켜짐(메인 화면에 보낸 항목) / 꺼짐 색 (2026-11-26 사용자 지시 "눌러 있는지 알 수 없다, 안 된 것은 더 어둡게")
   static const Color sendOnColor = Colors.greenAccent;
   static final Color sendOffColor = Colors.greenAccent.withValues(alpha: 0.3);
-  static final Color sendOnBackground = Colors.greenAccent.withValues(alpha: 0.25);
+  static final Color sendOnBackground = Colors.greenAccent.withValues(
+    alpha: 0.25,
+  );
 
   /// 🎯로 메인 화면에 보내는 글: 첫 줄, 12자 넘으면 `12자...`
   static String sendSummary(String text) {
     final firstLine = text.trim().split('\n').first;
-    return firstLine.length > 12 ? "${firstLine.substring(0, 12)}..." : firstLine;
+    return firstLine.length > 12
+        ? "${firstLine.substring(0, 12)}..."
+        : firstLine;
   }
 
   /// 항목 삭제 알림 (끝장 리스트만)
@@ -406,6 +410,18 @@ class _ListSidebarState<T extends ListSidebarItem>
   /// 파일 형식을 바꾸지 않아 예전 파일도 그대로 날짜가 보인다.
   DateTime? _savedDate;
 
+  /// 리스트에 내용(제목 또는 항목 글)이 하나라도 있는지.
+  bool get _hasContent =>
+      _titleController.text.trim().isNotEmpty ||
+      _items.any((item) => item.controller.text.trim().isNotEmpty);
+  bool _lastHasContent = false;
+
+  /// 2026-11-26 사용자 지시: 내용이 없거나 불러온(저장한) 파일이 없으면 실행 누적 화살표를 멈춘다.
+  bool get _runCounterEnabled {
+    _lastHasContent = _hasContent;
+    return _currentFilePath != null && _lastHasContent;
+  }
+
   static DateTime? _fileSavedDate(String? path) {
     if (path == null) return null;
     final file = File(path);
@@ -550,6 +566,8 @@ class _ListSidebarState<T extends ListSidebarItem>
 
     _titleController.addListener(() {
       widget.onTitleChanged(_titleController.text);
+      // 제목이 비었다/생겼다가 바뀔 때만 다시 그려 실행 화살표 켜짐을 맞춘다
+      if (mounted && _hasContent != _lastHasContent) setState(() {});
     });
   }
 
@@ -609,6 +627,7 @@ class _ListSidebarState<T extends ListSidebarItem>
             children: [
               RunCounterPanel(
                 savedDate: _savedDate,
+                enabled: _runCounterEnabled,
                 runRecords: widget.runRecords,
                 onRecordsChanged: widget.onRunRecordsChanged,
               ),
@@ -1109,7 +1128,8 @@ class _ListSidebarState<T extends ListSidebarItem>
 
   /// 🎯 버튼: 메인 화면에 보낸 항목이면 밝은 초록 + 둥근 배경, 아니면 어둡게
   Widget _buildSendButton(T item) {
-    final sent = widget.selectedItem.isNotEmpty &&
+    final sent =
+        widget.selectedItem.isNotEmpty &&
         item.text.trim().isNotEmpty &&
         ListSidebar.sendSummary(item.text) == widget.selectedItem;
     return DecoratedBox(
