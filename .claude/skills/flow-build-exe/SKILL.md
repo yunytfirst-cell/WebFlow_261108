@@ -42,6 +42,7 @@ python tools/build_exe.py --skip-build # 이미 빌드된 결과로 묶기만
 - 확인: 두 exe를 빈 폴더로 복사해 실행 → 사용자 `flow_single.exe`는 바로 종료, `dist\Flow.exe`(스크립트)는 창 제목 `Flow v1.7.3`으로 정상.
 - 해결: Enigma 창·예전 `.evb`를 쓰지 말고 **`tools\build_exe.bat`(= `python tools/build_exe.py`)의 `dist\Flow.exe`를 옮겨 쓴다**. 스크립트는 매번 현재 `dist\Flow` 목록으로 evb를 새로 만들고 VC++ 런타임도 넣는다.
 - 단일 exe 검사는 항상 **빌드 폴더가 아닌 빈 폴더로 복사해서** 실행한다(빌드 폴더에서는 빠진 파일이 가려진다).
+- "바탕화면으로 복사해서 실행" 요청: `dist\Flow.exe` → `C:\Users\yunyt\OneDrive\Desktop\Flow-vX.Y.Z.exe`(사용자 파일 `flow_single.exe`를 덮어쓰지 않게 버전 이름). 보고에 **어디서(전체 경로) → 어디로** 복사했는지 둘 다 적는다(2026-11-26 사용자 질문 "어디에서 복사한거지?" — 받는 곳만 적었었음).
 
 ## 앱 아이콘 (2026-11-24 사용자 지적 "실행파일 아이콘이 너무 작아 안 보인다, 노란 메모 아이콘처럼 크고 잘 보이게")
 
