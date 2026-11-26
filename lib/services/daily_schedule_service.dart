@@ -55,6 +55,28 @@ class DailyScheduleService {
     return "$hourString:00";
   }
 
+  /// 지금 시간과 같은 글이 이어지는 구간의 (시작, 끝) 시각 (2026-11-26 사용자 지시:
+  /// 위쪽 = 그 글이 처음 기입된 시간, 아래쪽 = 그 글이 끝나는 다음 시간).
+  /// 예: 9·10·11시가 모두 "공부"면 지금이 10시여도 (09:00, 12:00).
+  static ({String start, String end}) getTimeRangeLabels(
+    List<String> schedule,
+    int hour,
+  ) {
+    if (hour < 0 || hour >= schedule.length) {
+      return (start: getTimeSlotLabel(hour), end: getTimeSlotLabel(hour + 1));
+    }
+    final text = schedule[hour].trim();
+    var start = hour;
+    while (start > 0 && schedule[start - 1].trim() == text) {
+      start--;
+    }
+    var end = hour + 1;
+    while (end < schedule.length && schedule[end].trim() == text) {
+      end++;
+    }
+    return (start: getTimeSlotLabel(start), end: getTimeSlotLabel(end));
+  }
+
   /// 현재 시간대의 스케줄 텍스트 가져오기
   static String getCurrentScheduleText(List<String> schedule, [DateTime? now]) {
     final currentNow = now ?? DateTime.now();

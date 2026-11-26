@@ -190,6 +190,7 @@ class _ListSidebarState<T extends ListSidebarItem>
       _numberEditIndex = null;
       _styleTarget = null;
       _currentFilePath = null;
+      _savedDate = null;
       widget.runRecords.clear();
     });
     widget.onRunRecordsChanged();
@@ -359,6 +360,8 @@ class _ListSidebarState<T extends ListSidebarItem>
 
       await file.writeAsString(content, flush: true);
       _currentFilePath = file.path;
+      // 2026-11-26 사용자 지시: 저장하면 실행 박스의 날짜가 오늘로 바뀐다
+      if (mounted) setState(() => _savedDate = DateTime.now());
       widget.onFilePathChanged(file.path);
       widget.onItemsChanged(_items);
       if (mounted) {
@@ -384,6 +387,16 @@ class _ListSidebarState<T extends ListSidebarItem>
   /// 디스크의 제목·항목·카운터는 그대로 두고 접힘 표시만 바꾼다(저장 안 한 편집은 섞지 않음).
   Future<void> _foldWrite = Future.value();
 
+  /// 실행 박스에 보이는 저장 날짜 = 열린 파일의 마지막 저장(수정) 시각 (2026-11-26 사용자 지시).
+  /// 파일 형식을 바꾸지 않아 예전 파일도 그대로 날짜가 보인다.
+  DateTime? _savedDate;
+
+  static DateTime? _fileSavedDate(String? path) {
+    if (path == null) return null;
+    final file = File(path);
+    return file.existsSync() ? file.lastModifiedSync() : null;
+  }
+
   void _setCollapsed(T item, bool collapsed) {
     setState(() => item.collapsed = collapsed);
     final path = _currentFilePath;
@@ -402,7 +415,10 @@ class _ListSidebarState<T extends ListSidebarItem>
           kind: _spec.kind,
           screenItems: screenItems,
         );
+        // 접기·펼치기는 저장이 아니므로 실행 박스 날짜(파일 수정 시각)를 그대로 둔다
+        final savedAt = await file.lastModified();
         await file.writeAsString(updated, flush: true);
+        await file.setLastModified(savedAt);
       } on FileSystemException catch (error) {
         debugPrint("${_spec.logName} 접기 상태 저장 실패: $error");
       }
@@ -425,6 +441,7 @@ class _ListSidebarState<T extends ListSidebarItem>
         await file.readAsString(),
         kind: _spec.kind,
       );
+      final savedDate = await file.lastModified();
 
       setState(() {
         _items.clear();
@@ -445,6 +462,7 @@ class _ListSidebarState<T extends ListSidebarItem>
 
         if (_items.isEmpty) _items.add(widget.newItem());
         _currentFilePath = file.path;
+        _savedDate = savedDate;
         widget.onFilePathChanged(file.path);
         widget.onItemsChanged(_items);
       });
@@ -513,6 +531,7 @@ class _ListSidebarState<T extends ListSidebarItem>
     _titleController = TextEditingController(text: widget.initialTitle);
     _items = widget.initialItems;
     _currentFilePath = widget.initialFilePath;
+    _savedDate = _fileSavedDate(_currentFilePath);
 
     _titleController.addListener(() {
       widget.onTitleChanged(_titleController.text);
@@ -574,6 +593,7 @@ class _ListSidebarState<T extends ListSidebarItem>
             mainAxisSize: MainAxisSize.min,
             children: [
               RunCounterPanel(
+                savedDate: _savedDate,
                 runRecords: widget.runRecords,
                 onRecordsChanged: widget.onRunRecordsChanged,
               ),

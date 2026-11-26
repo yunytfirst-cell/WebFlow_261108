@@ -16,6 +16,10 @@ class RunCounterService {
     return "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
   }
 
+  /// 실행 박스에 보이는 저장 날짜 `MM.dd` (예: 11.24)
+  static String shortDate(DateTime d) =>
+      "${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}";
+
   /// 어떤 접두어든 실행 기록 형식의 줄이면 true
   static bool isRunLine(String line) => _lineRegex.hasMatch(line.trim());
 

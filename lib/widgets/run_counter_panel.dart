@@ -6,11 +6,16 @@ class RunCounterPanel extends StatefulWidget {
   const RunCounterPanel({
     required this.runRecords,
     required this.onRecordsChanged,
+    this.savedDate,
     super.key,
   });
 
   final Map<String, int> runRecords;
   final VoidCallback onRecordsChanged;
+
+  /// 열린 리스트 파일을 마지막으로 저장한 날짜 (2026-11-26 사용자 지시). 저장하면 오늘이 된다.
+  /// 열린 파일이 없으면 null이고 날짜를 보이지 않는다.
+  final DateTime? savedDate;
 
   @override
   State<RunCounterPanel> createState() => _RunCounterPanelState();
@@ -29,7 +34,7 @@ class _RunCounterPanelState extends State<RunCounterPanel> {
     widget.onRecordsChanged();
   }
 
-  // 2026-11-24 사용자 지시: 사이드바 제목 앞에 붙는 작은 박스. `실행` → `누적 N` → 위/아래 화살표(세로).
+  // 2026-11-24 사용자 지시: 사이드바 제목 앞에 붙는 작은 박스. `실행` → (저장 날짜) → `누적 N` → 위/아래 화살표(세로).
   // 폭 맞춤은 부모(제목 줄의 FittedBox)가 하므로 여기서는 고정 크기로만 그린다.
   @override
   Widget build(BuildContext context) {
@@ -49,32 +54,39 @@ class _RunCounterPanelState extends State<RunCounterPanel> {
             style: TextStyle(color: Colors.white70, fontSize: 13),
           ),
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.amber.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.amberAccent.withValues(alpha: 0.5),
+          // 2026-11-26 사용자 지시: 누적을 감싸던 배지 박스를 없애고 `실행 MM.dd 누적 N` 한 줄로 둔다.
+          if (widget.savedDate != null) ...[
+            Text(
+              RunCounterService.shortDate(widget.savedDate!),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                fontFeatures: [FontFeature.tabularFigures()],
               ),
             ),
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  const TextSpan(
-                    text: '누적 ',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            const SizedBox(width: 8),
+          ],
+          Text.rich(
+            TextSpan(
+              children: [
+                const TextSpan(
+                  text: '누적 ',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
                   ),
-                  TextSpan(
-                    text: '$_totalCount',
-                    style: const TextStyle(
-                      color: Colors.amberAccent,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                    ),
+                ),
+                TextSpan(
+                  text: '$_totalCount',
+                  style: const TextStyle(
+                    color: Colors.amberAccent,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 4),

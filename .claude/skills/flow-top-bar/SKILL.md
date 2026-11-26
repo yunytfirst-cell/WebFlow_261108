@@ -14,7 +14,9 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 0. (`showDailyScheduleBox`일 때) Daily 스케줄 박스: top `topGap + 24`, **`left: _barLeft`, `width: _barWidth`** (2026-11-24 사용자 지시: −/+ 버튼 왼쪽 끝 ~ 설정 아이콘 오른쪽 끝, 목표바와 같은 잰 값). 재기 전 첫 프레임만 예전처럼 `targetWidth` 가운데.
    - `DailyScheduleBox`(`lib/widgets/daily_schedule_box.dart`) 구조 (2026-11-24 사용자 지시 "현재시간을 왼쪽 끝으로" → "시간 앞 아이콘·감싸는 박스 제거, 박스 왼쪽 끝~시간 끝까지 컬러로 표시"): 바깥 Container(높이 76, 패딩 없음, `clipBehavior: antiAlias`, 배경 primary 0.35·모서리 14·그림자는 decoration, **테두리는 `foregroundDecoration`** — 색 칸이 테두리를 덮지 않게) → `Row(stretch)[ 시간 색 칸, Expanded(Padding(10/6, 예전 FittedBox 내용)) ]`.
      - 시간 색 칸: `Container(color: accentColor 0.6, 가로 패딩 12, 가운데)` 안에 `FittedBox(Text HH:mm, 20, w900, tabularFigures)`. 시계 아이콘·검은 둥근 박스는 **없다**.
-     - 오른쪽 내용: 시간대 라벨·스케줄 글(누르면 편집) → 6 → 닫기(X). 스케줄 아이콘(`schedule_rounded`)은 **없다**(2026-11-24 사용자 지시 "현재시간 우측 아이콘 제거"). 기준 폭 최소 220(`referenceWidth`).
+     - 오른쪽 내용: 시간대 라벨·스케줄 글(누르면 편집)
+     - **시간대 라벨 = 2줄** (2026-11-26 사용자 지시 "기입된 글자의 시작시간 위쪽, 같은 글자가 끝나는 다음 시간 아래쪽, 2열로"): `DailyScheduleService.getTimeRangeLabels(schedule, hour)`가 지금 시간과 같은 글(trim 비교, 빈 칸도 한 구간)이 이어지는 구간의 (시작, 끝=구간 다음 시간)을 `HH:00`으로 준다(예: 9·10·11시 "공부" → 09:00/12:00, 끝은 최대 27:00). 라벨 칸(accent 0.35, 패딩 8/4, 모서리 6) 안 `Column[시작, 끝]`, 글자 `DailyScheduleBox.timeRangeFontSize`(14) 굵게·줄 높이 1.15·고정폭 숫자, 라벨 칸과 스케줄 글 사이 8. 테스트: `top_bar_test` Daily 테스트(끝 글자가 시작 아래, 왼쪽 정렬, 현재 시간 오른쪽), `run_counter_service_test`의 구간 계산.
+ → 6 → 닫기(X). 스케줄 아이콘(`schedule_rounded`)은 **없다**(2026-11-24 사용자 지시 "현재시간 우측 아이콘 제거"). 기준 폭 최소 220(`referenceWidth`).
 1. 컨트롤 아이콘 행: top `buttonRowTop = topGap + (박스 있으면 112, 없으면 2)`.
 2. 목표 제목 `GoalTitleDisplay`: bottom `_goalTitleBottom(containerHeight)` (2026-11-25 사용자 지시 "상단바와 목표 박스 간격을 지금의 1/2로, STEP 박스 위치는 바꾸지 말 것"). 예전 자리(bottom `티커 높이 + 10`)에서 아이콘 행 **실제 아래 끝**(`_measureIconsRow`가 재는 `_rowBottom`, FittedBox 축소 반영)까지의 간격 × `goalGapRatio`(0.5)만큼 위로 올린다. 재기 전 첫 프레임·간격이 0 이하면 예전 자리.
 3. 티커 `TopBarTicker`: bottom 2.
@@ -64,11 +66,11 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
   - **AnimatedPositioned를 쓰지 않는 이유**(사용자에게 보인 문제는 아니고 테스트에서 잡음): 시작 직후 목표바 폭을 다시 재면(700→592) AnimatedPositioned가 새 위치로 0.9초 동안 미끄러져, 🎯를 안 눌러도 아이콘이 움직였다. 진행값만 애니메이션하면 폭 변화는 바로 반영되고 🎯 상태 변화만 서서히 움직인다.
   - STEP 글 폭 = 박스 폭 − 아이콘 폭 − 간격 − 조작 버튼 폭(85). 조작 버튼(↑↓×)은 active일 때 오른쪽(`top: 0`).
   - `FinishFlagIcon.widthFor(height) = height*0.72*1.5`로 아이콘 폭을 밖에서 계산한다.
-- 테스트(`🎯로 보내면 아이콘이 글과 함께 왼쪽으로 움직인다`): 보내기 전 두 아이콘 오른쪽 끝·글은 박스 밖, 절반 시간에 깃발이 중간 위치·글이 깃발 오른쪽 20 이내, 끝나면 두 아이콘 왼쪽 끝·글은 아이콘 오른쪽 박스 안, 선택 해제하면 다시 오른쪽.
+- 테스트(`🎯로 보내면 아이콘이 글과 함께 왼쪽으로 움직인다`): 보내기 전 깃발은 오른쪽 끝·과녁은 "목표" 글자와 함께 오른쪽 끝(2026-11-26)·글은 박스 밖, 절반 시간에 깃발이 중간 위치·글이 깃발 오른쪽 20 이내, 끝나면 두 아이콘 왼쪽 끝·글은 아이콘 오른쪽 박스 안, 선택 해제하면 다시 오른쪽.
 
 ## "목표:" = 과녁 아이콘 (2026-11-25 사용자 지시 "목표: 글자 첨부된 아이콘으로 변경, 하단(FINISH 아이콘) 설정과 동일")
 
-- `GoalTitleDisplay`의 `목표: ` 글자 대신 `Image.asset(GoalTitleDisplay.iconAsset = 'assets/images/goal_target.png')`(툴팁 `목표`) + 간격 `fontSize*0.4` → 제목 입력칸.
+- `GoalTitleDisplay`의 `목표: ` 글자 대신 `Image.asset(GoalTitleDisplay.iconAsset = 'assets/images/goal_target.png')`(툴팁 `목표`) + 간격 `fontSize*0.4` → `목표` 글자(2026-11-26, 아래 절) → 간격 → 제목 입력칸.
 - 크기는 아래 FINISH 아이콘과 같다: `GoalTitleDisplay.iconScale = 0.95 * 1.5` × 박스 높이. Row 안 자리는 `SizedBox(폭 = 아이콘 크기, 높이 = 박스 높이)` + `OverflowBox`로 **위아래로 넘치게** 그린다(박스 위치·높이 그대로). 1280×800에서 설정 아이콘·FINISH 깃발과 겹치지 않는다(테스트).
 - 에셋 만들기: 첨부 PNG를 PIL로 네 모서리에서 `floodfill(thresh=40)`해 바깥 흰 바탕만 투명하게(안쪽 흰 띠는 그대로) → `getbbox()`로 자르고 정사각형 투명 캔버스 가운데에 붙여 저장. 어두운 바탕에 합성한 미리보기를 Read로 확인. `pubspec.yaml` assets에 경로 추가.
 - 테스트: `목표: ` 글자 없음, 에셋 Image 하나, 높이 = 깃발 높이, 왼쪽 끝 = 목표 박스 왼쪽, 위 끝 ≥ 설정 아이콘 아래, 아래 끝 ≤ 깃발 위.
@@ -84,3 +86,8 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 ## 주의
 
 - `dart format`은 **바꾼 파일만** 지정한다. `lib/widgets/*.dart`처럼 한꺼번에 돌리면 손대지 않은 14개 파일이 바뀌어 analyze 경고가 늘어난다(2026-11-24 실수, `git checkout`으로 되돌림). **top_bar.dart·top_bar_ticker.dart는 원래 포맷되지 않은 파일이라 바꿨어도 `dart format`을 돌리지 않는다** — 2026-11-25에 돌렸더니 파일 전체가 바뀌고 curly_braces 경고 4개가 늘어 `git checkout` 후 고친 부분만 다시 넣었다.
+
+## "목표" 글자 (2026-11-26 사용자 지시 "메인화면 목표 아이콘 다음에 목표 글자 추가")
+- `GoalTitleDisplay.label = '목표'`를 과녁 아이콘 바로 뒤(간격 `fontSize*0.4`)에 둔다. 글자는 목표 입력 글과 같은 스타일(fontSize, 굵게, height 1.0, textColor), `Positioned(top 0, bottom 0) + Align(centerLeft)`.
+- 아이콘·간격·"목표"·간격이 **한 묶음**(`headWidth`)으로 움직인다: `iconLeft = (박스폭 − 아이콘 − 간격 − 글자폭) × (1 − t)` → 🎯 보내기 전에도 "목표" 글자가 아이콘과 함께 **오른쪽 끝**에 보이고(글자 오른쪽 끝 = 박스 오른쪽 끝), 목표 입력 글은 `iconLeft + headWidth`에서 시작한다. 글자 폭은 `TextPainter`로 재고 바로 `dispose()`.
+- 테스트(`top_bar_test`): 보내기 전 "목표" 오른쪽 끝 = 박스 오른쪽 끝, 글자 왼쪽 > 아이콘 오른쪽, 간격 < 아이콘 폭. (예전 "아이콘 오른쪽 끝 = 박스 오른쪽 끝" 검사는 이 규칙으로 바뀜)

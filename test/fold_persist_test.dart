@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flow/services/list_file_service.dart';
+import 'package:flow/services/run_counter_service.dart';
 import 'package:flow/widgets/awareness_list_sidebar.dart';
 import 'package:flow/widgets/goal_list_sidebar.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +39,7 @@ class _FakePicker extends FilePicker {
 /// A 파일 열기 → 접기/펼치기 (저장 안 누름) → 다른 B 파일 열기 → A 다시 열기
 /// → 사용자가 접거나 펼친 상태 그대로여야 한다.
 void main() {
+  final savedA = DateTime(2026, 11, 20, 9);
   late Directory dir;
   late _FakePicker picker;
   late String pathA;
@@ -67,6 +69,8 @@ void main() {
       items: ['B 항목\n둘째 줄'],
       runRecords: {},
     ));
+    // 실행 박스 날짜 = 파일 마지막 저장 시각 (2026-11-26)
+    File(pathA).setLastModifiedSync(savedA);
   }
 
   void setWide(WidgetTester tester) {
@@ -104,6 +108,7 @@ void main() {
   ) async {
     await open(tester, pathA);
     expect(collapsedOnScreen(), [false, false, true]);
+    expect(find.text('11.20'), findsOneWidget);
 
     // 1번 접기, 3번 펼치기 (저장 버튼은 누르지 않는다)
     await tapTooltip(tester, '접기', 0); // 펼쳐진 긴 항목 중 첫째 = 1번
@@ -127,6 +132,14 @@ void main() {
 
     // 저장 안 한 글 수정은 파일에 들어가지 않는다
     expect(File(pathA).readAsStringSync(), isNot(contains('(고침)')));
+    // 접기·펼치기는 저장이 아니라 날짜(파일 수정 시각)가 그대로다
+    expect(File(pathA).lastModifiedSync(), savedA);
+    expect(find.text('11.20'), findsOneWidget);
+
+    // 저장을 누르면 날짜가 오늘로 바뀐다
+    await tester.tap(find.text('저장'));
+    await settleIo(tester);
+    expect(find.text(RunCounterService.shortDate(DateTime.now())), findsOneWidget);
     expect(tester.takeException(), isNull);
   }
 

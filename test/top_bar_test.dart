@@ -118,7 +118,11 @@ void main() {
     expect(targetBox.height, moreOrLessEquals(flagBox.height, epsilon: 0.5));
     // 🎯 전에는 목표 박스 오른쪽 끝에 있고, 위 설정 아이콘·아래 깃발과 겹치지 않는다
     final goalBox = tester.getRect(find.byType(GoalTitleDisplay));
-    expect(targetBox.right, moreOrLessEquals(goalBox.right, epsilon: 0.5));
+    // 2026-11-26 사용자 지시: 아이콘 바로 뒤에 "목표" 글자, 그 글자가 박스 오른쪽 끝
+    final labelBox = tester.getRect(find.text(GoalTitleDisplay.label));
+    expect(labelBox.right, moreOrLessEquals(goalBox.right, epsilon: 0.5));
+    expect(labelBox.left, greaterThan(targetBox.right));
+    expect(labelBox.left - targetBox.right, lessThan(targetBox.width));
     expect(
       targetBox.top,
       greaterThanOrEqualTo(tester.getBottomLeft(find.byTooltip('설정')).dy),
@@ -216,6 +220,12 @@ void main() {
       greaterThan(tester.getTopRight(find.text('09:05')).dx),
     );
     expect(timeX, lessThan(tester.getTopLeft(find.text('운동')).dx));
+    // 2026-11-26 사용자 지시: 같은 글이 이어지는 시간의 시작(위)·끝(아래) 2줄
+    final start = tester.getRect(find.text('00:00'));
+    final end = tester.getRect(find.text('27:00'));
+    expect(end.top, greaterThanOrEqualTo(start.bottom - 0.5));
+    expect(start.left, moreOrLessEquals(end.left, epsilon: 1));
+    expect(start.left, greaterThan(tester.getTopRight(find.text('09:05')).dx));
     expect(tester.takeException(), isNull);
   });
 
@@ -264,8 +274,12 @@ void main() {
     // 보내기 전: 두 아이콘 모두 오른쪽 끝, 글은 박스 밖(오른쪽)에 숨어 있다
     expect(tester.getTopRight(flag).dx,
         moreOrLessEquals(tester.getTopRight(ticker).dx, epsilon: 1));
-    expect(tester.getTopRight(target).dx,
+    // 2026-11-26: 과녁 아이콘 바로 뒤 "목표" 글자가 오른쪽 끝에 붙는다
+    final label = find.text(GoalTitleDisplay.label);
+    expect(tester.getTopRight(label).dx,
         moreOrLessEquals(tester.getTopRight(goalBox).dx, epsilon: 1));
+    expect(tester.getTopLeft(label).dx,
+        greaterThan(tester.getTopRight(target).dx));
     expect(tester.getTopLeft(step).dx,
         greaterThanOrEqualTo(tester.getTopRight(ticker).dx));
     expect(tester.getTopLeft(title).dx,

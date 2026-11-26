@@ -3,6 +3,9 @@ import '../models/design_theme.dart';
 import '../services/daily_schedule_service.dart';
 
 class DailyScheduleBox extends StatelessWidget {
+  /// 시작·끝 시간 2줄 글자 크기 (2줄이 박스 높이 64 안에 들어가게)
+  static const double timeRangeFontSize = 14;
+
   final List<String> schedule24h;
   final DateTime currentTime;
   final AppThemeData theme;
@@ -23,7 +26,8 @@ class DailyScheduleBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int currentHour = currentTime.hour;
-    final String timeSlotLabel = DailyScheduleService.getTimeSlotLabel(
+    final timeRange = DailyScheduleService.getTimeRangeLabels(
+      schedule24h,
       currentHour,
     );
     final String scheduleText = DailyScheduleService.getCurrentScheduleText(
@@ -123,15 +127,30 @@ class DailyScheduleBox extends StatelessWidget {
                                         ),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: Text(
-                                        timeSlotLabel,
-                                        style: TextStyle(
-                                          color: theme.textColor,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                      // 2026-11-26 사용자 지시: 2줄로 위 = 시작 시간, 아래 = 끝 시간
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          for (final label in [
+                                            timeRange.start,
+                                            timeRange.end,
+                                          ])
+                                            Text(
+                                              label,
+                                              style: TextStyle(
+                                                color: theme.textColor,
+                                                fontSize: timeRangeFontSize,
+                                                height: 1.15,
+                                                fontWeight: FontWeight.bold,
+                                                fontFeatures: const [
+                                                  FontFeature.tabularFigures(),
+                                                ],
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         scheduleText,

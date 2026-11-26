@@ -1,3 +1,4 @@
+import 'package:flow/services/daily_schedule_service.dart';
 import 'package:flow/services/run_counter_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -39,5 +40,27 @@ void main() {
 
   test('todayKey 형식', () {
     expect(RunCounterService.todayKey(DateTime(2026, 1, 7)), '2026-01-07');
+  });
+
+  test('저장 날짜는 MM.dd로 보인다', () {
+    expect(RunCounterService.shortDate(DateTime(2026, 3, 5)), '03.05');
+    expect(RunCounterService.shortDate(DateTime(2026, 11, 24)), '11.24');
+  });
+
+  test('Daily: 같은 글이 이어지는 구간의 시작·끝 시간', () {
+    final schedule = List<String>.filled(27, '');
+    schedule[9] = '공부';
+    schedule[10] = '공부 ';
+    schedule[11] = '공부';
+    schedule[12] = '점심';
+    expect(DailyScheduleService.getTimeRangeLabels(schedule, 10),
+        (start: '09:00', end: '12:00'));
+    expect(DailyScheduleService.getTimeRangeLabels(schedule, 12),
+        (start: '12:00', end: '13:00'));
+    // 빈 칸도 이어진 구간으로 본다
+    expect(DailyScheduleService.getTimeRangeLabels(schedule, 3),
+        (start: '00:00', end: '09:00'));
+    expect(DailyScheduleService.getTimeRangeLabels(schedule, 20),
+        (start: '13:00', end: '27:00'));
   });
 }

@@ -11,6 +11,9 @@ class GoalTitleDisplay extends StatefulWidget {
   /// 아이콘을 박스 가운데에서 아래로 내리는 양 ÷ 박스 높이 (목표 글자의 실제 세로 가운데에 맞춤)
   static const double iconDropRatio = 0.155;
 
+  /// 과녁 아이콘 바로 뒤에 붙는 글자 (2026-11-26 사용자 지시 "목표 아이콘 다음에 목표 글자 추가")
+  static const String label = '목표';
+
   static const double iconScale =
       0.95 * 1.5 * 2 / 3; // 2026-11-25 사용자 지시 "아이콘 지금의 2/3" → 0.95
 
@@ -67,10 +70,22 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
     final double iconSize = viewportHeight * GoalTitleDisplay.iconScale;
     final double gap = widget.fontSize * 0.4;
     final bool active = widget.active;
-    final double textWidth = (targetWidth - iconSize - gap).clamp(
-      0.0,
-      targetWidth,
+    final labelStyle = TextStyle(
+      fontSize: widget.fontSize,
+      fontWeight: FontWeight.bold,
+      height: 1.0,
+      color: widget.theme.textColor,
     );
+    // 아이콘 + 간격 + "목표" + 간격 이 한 묶음으로 움직인다
+    final labelPainter = TextPainter(
+      text: TextSpan(text: GoalTitleDisplay.label, style: labelStyle),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    final double labelWidth = labelPainter.width;
+    labelPainter.dispose();
+    final double headWidth = iconSize + gap + labelWidth + gap;
+    final double textWidth = (targetWidth - headWidth).clamp(0.0, targetWidth);
 
     // 폭이 바뀔 때(창 크기·처음 측정)는 바로 맞추고, 🎯 상태가 바뀔 때만 서서히 움직이도록
     // 위치 대신 진행값 t(0=오른쪽, 1=왼쪽)를 애니메이션한다.
@@ -79,7 +94,9 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
       duration: TopBarTicker.slideDuration,
       curve: Curves.easeInOutCubic,
       builder: (context, t, _) {
-        final double iconLeft = (targetWidth - iconSize) * (1 - t);
+        // 보내기 전에도 아이콘과 "목표" 글자가 함께 오른쪽 끝에 보인다
+        final double iconLeft = (targetWidth - iconSize - gap - labelWidth) *
+            (1 - t);
         return SizedBox(
           width: targetWidth,
           child: Container(
@@ -103,7 +120,7 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
                     child: Stack(
                       children: [
                         Positioned(
-                          left: iconLeft + iconSize + gap,
+                          left: iconLeft + headWidth,
                           top: 0,
                           bottom: 0,
                           width: textWidth,
@@ -142,6 +159,16 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
                         ),
                       ],
                     ),
+                  ),
+                ),
+                // "목표" 글자 (아이콘 바로 뒤, 목표 입력 글과 같은 글자·세로 정렬)
+                Positioned(
+                  left: iconLeft + iconSize + gap,
+                  top: 0,
+                  bottom: 0,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(GoalTitleDisplay.label, style: labelStyle),
                   ),
                 ),
                 // 과녁 아이콘 (FINISH 아이콘과 같은 크기, 박스 위아래로 넘침)
