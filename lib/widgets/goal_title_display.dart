@@ -12,7 +12,8 @@ class GoalTitleDisplay extends StatefulWidget {
   static const double iconDropRatio = 0.155;
 
   /// 과녁 아이콘 바로 뒤에 붙는 글자 (2026-11-26 사용자 지시 "목표 아이콘 다음에 목표 글자 추가")
-  static const String label = '목표';
+  /// 2026-11-26 사용자 지시 "목표 → 목표>, 하단(STEP) 글자 크기와 동일" → 크기 = fontSize × TopBarTicker.textScale
+  static const String label = '목표>';
 
   static const double iconScale =
       0.95 * 1.5 * 2 / 3; // 2026-11-25 사용자 지시 "아이콘 지금의 2/3" → 0.95
@@ -71,7 +72,7 @@ class _GoalTitleDisplayState extends State<GoalTitleDisplay> {
     final double gap = widget.fontSize * 0.4;
     final bool active = widget.active;
     final labelStyle = TextStyle(
-      fontSize: widget.fontSize,
+      fontSize: widget.fontSize * TopBarTicker.textScale,
       fontWeight: FontWeight.bold,
       height: 1.0,
       color: widget.theme.textColor,

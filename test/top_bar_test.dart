@@ -120,6 +120,13 @@ void main() {
     final goalBox = tester.getRect(find.byType(GoalTitleDisplay));
     // 2026-11-26 사용자 지시: 아이콘 바로 뒤에 "목표" 글자, 그 글자가 박스 오른쪽 끝
     final labelBox = tester.getRect(find.text(GoalTitleDisplay.label));
+    // 2026-11-26 사용자 지시: "목표>" 글자 크기 = 하단 STEP 글자 크기
+    expect(GoalTitleDisplay.label, '목표>');
+    final goalFont = tester.widget<GoalTitleDisplay>(find.byType(GoalTitleDisplay)).fontSize;
+    expect(
+      tester.widget<Text>(find.text(GoalTitleDisplay.label)).style!.fontSize,
+      moreOrLessEquals(goalFont * TopBarTicker.textScale),
+    );
     expect(labelBox.right, moreOrLessEquals(goalBox.right, epsilon: 0.5));
     expect(labelBox.left, greaterThan(targetBox.right));
     expect(labelBox.left - targetBox.right, lessThan(targetBox.width));

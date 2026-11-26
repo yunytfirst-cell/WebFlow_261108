@@ -88,6 +88,6 @@ description: Flow 메인 화면 상단바(TopBar, lib/widgets/top_bar.dart)의 �
 - `dart format`은 **바꾼 파일만** 지정한다. `lib/widgets/*.dart`처럼 한꺼번에 돌리면 손대지 않은 14개 파일이 바뀌어 analyze 경고가 늘어난다(2026-11-24 실수, `git checkout`으로 되돌림). **top_bar.dart·top_bar_ticker.dart는 원래 포맷되지 않은 파일이라 바꿨어도 `dart format`을 돌리지 않는다** — 2026-11-25에 돌렸더니 파일 전체가 바뀌고 curly_braces 경고 4개가 늘어 `git checkout` 후 고친 부분만 다시 넣었다.
 
 ## "목표" 글자 (2026-11-26 사용자 지시 "메인화면 목표 아이콘 다음에 목표 글자 추가")
-- `GoalTitleDisplay.label = '목표'`를 과녁 아이콘 바로 뒤(간격 `fontSize*0.4`)에 둔다. 글자는 목표 입력 글과 같은 스타일(fontSize, 굵게, height 1.0, textColor), `Positioned(top 0, bottom 0) + Align(centerLeft)`.
+- `GoalTitleDisplay.label = '목표>'`(2026-11-26 사용자 지시 "목표 → 목표>, 하단 글자 크기와 동일")를 과녁 아이콘 바로 뒤(간격 `fontSize*0.4`)에 둔다. 글자 크기 = **하단 STEP 글자와 같은 `fontSize × TopBarTicker.textScale`(2/3)**, 굵게, height 1.0, textColor (처음 1.7.0에는 '목표'·목표 입력 글 크기였음), `Positioned(top 0, bottom 0) + Align(centerLeft)`.
 - 아이콘·간격·"목표"·간격이 **한 묶음**(`headWidth`)으로 움직인다: `iconLeft = (박스폭 − 아이콘 − 간격 − 글자폭) × (1 − t)` → 🎯 보내기 전에도 "목표" 글자가 아이콘과 함께 **오른쪽 끝**에 보이고(글자 오른쪽 끝 = 박스 오른쪽 끝), 목표 입력 글은 `iconLeft + headWidth`에서 시작한다. 글자 폭은 `TextPainter`로 재고 바로 `dispose()`.
-- 테스트(`top_bar_test`): 보내기 전 "목표" 오른쪽 끝 = 박스 오른쪽 끝, 글자 왼쪽 > 아이콘 오른쪽, 간격 < 아이콘 폭. (예전 "아이콘 오른쪽 끝 = 박스 오른쪽 끝" 검사는 이 규칙으로 바뀜)
+- 테스트(`top_bar_test`): 글자 = `목표>`, 글자 크기 = 목표 fontSize × textScale, 보내기 전 "목표>" 오른쪽 끝 = 박스 오른쪽 끝, 글자 왼쪽 > 아이콘 오른쪽, 간격 < 아이콘 폭. (예전 "아이콘 오른쪽 끝 = 박스 오른쪽 끝" 검사는 이 규칙으로 바뀜)
