@@ -1,5 +1,6 @@
 import 'package:flow/widgets/awareness_list_sidebar.dart';
 import 'package:flow/widgets/goal_list_sidebar.dart';
+import 'package:flow/widgets/list_sidebar.dart';
 import 'package:flow/widgets/run_counter_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -413,6 +414,51 @@ void main() {
       expect(find.byTooltip('기울임'), findsNothing);
       expect(find.byTooltip('글자 색'), findsNothing);
     }
+    expect(tester.takeException(), isNull);
+  });
+
+  // 2026-11-26 사용자 지시: 메인 화면에 보낸 항목의 🎯는 밝게(배경 포함), 나머지는 어둡게
+  testWidgets('끝장 리스트: 보낸 항목의 🎯만 밝고 나머지는 어둡다', (tester) async {
+    setWide(tester);
+    final goals = [GoalItem(text: 'A'), GoalItem(text: 'B')];
+    var selected = '';
+    await tester.pumpWidget(StatefulBuilder(
+      builder: (context, setState) => MaterialApp(
+        home: Scaffold(
+          body: GoalListSidebar(
+            runRecords: {},
+            onRunRecordsChanged: () {},
+            onLoadDirectoryChanged: (_) {},
+            selectedGoal: selected,
+            onSelectGoal: (g) =>
+                setState(() => selected = selected == g ? '' : g),
+            onDeleteGoal: (_) {},
+            onClose: () {},
+            initialTitle: '',
+            initialGoals: goals,
+            onTitleChanged: (_) {},
+            onGoalsChanged: (_) {},
+            initialFilePath: null,
+            onFilePathChanged: (_) {},
+          ),
+        ),
+      ),
+    ));
+    List<Color?> colors() => tester
+        .widgetList<Icon>(find.byIcon(Icons.gps_fixed))
+        .map((i) => i.color)
+        .toList();
+
+    expect(colors(), [ListSidebar.sendOffColor, ListSidebar.sendOffColor]);
+    await tester.tap(find.byTooltip('메인 화면으로 보내기').at(1));
+    await tester.pump();
+    expect(selected, 'B');
+    expect(colors(), [ListSidebar.sendOffColor, ListSidebar.sendOnColor]);
+    // 다시 누르면 꺼진다
+    await tester.tap(find.byTooltip('메인 화면으로 보내기').at(1));
+    await tester.pump();
+    expect(colors(), [ListSidebar.sendOffColor, ListSidebar.sendOffColor]);
+    expect(ListSidebar.sendSummary('가나다라마바사아자차카타파\n둘째'), '가나다라마바사아자차카타...');
     expect(tester.takeException(), isNull);
   });
 }

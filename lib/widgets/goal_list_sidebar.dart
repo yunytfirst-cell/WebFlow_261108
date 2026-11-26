@@ -14,6 +14,7 @@ class GoalItem extends ListSidebarItem {
 class GoalListSidebar extends StatelessWidget {
   final Function(String) onSelectGoal; // 선택된 목표를 TopBar로 보냄
   final Function(String) onDeleteGoal; // 삭제 알림
+  final String selectedGoal; // 지금 메인 화면에 보낸 항목 요약 (그 항목의 🎯만 밝게)
   final VoidCallback onClose;
 
   final String initialTitle;
@@ -39,6 +40,7 @@ class GoalListSidebar extends StatelessWidget {
     super.key,
     required this.onSelectGoal,
     required this.onDeleteGoal,
+    this.selectedGoal = '',
     required this.onClose,
     required this.initialTitle,
     required this.initialGoals,
@@ -66,6 +68,7 @@ class GoalListSidebar extends StatelessWidget {
       initialFilePath: initialFilePath,
       onFilePathChanged: onFilePathChanged,
       onSelectItem: onSelectGoal,
+      selectedItem: selectedGoal,
       onDeleteItem: onDeleteGoal,
     );
   }

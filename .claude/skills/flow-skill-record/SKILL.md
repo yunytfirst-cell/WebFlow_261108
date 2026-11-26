@@ -74,5 +74,5 @@ description: Flow 프로젝트에서 skill(.claude/skills) 기록 규칙과 자�
 
 ## 더 빠른 방법 (작업하며 배운 것)
 
-- 여러 파일을 한꺼번에 문자열 치환할 때는 bash heredoc 안 `python -` 대신 **scratchpad에 .py 파일을 Write로 만들어 실행**한다. heredoc 안 파이썬 문자열에서는 Dart의 `r'[/\]'`, `\n` 같은 역슬래시가 깨져 치환이 실패한다(2026-11-21 두 번 실패). 파일은 `open(..., newline='')`로 써서 줄끝을 바꾸지 않는다.
+- 여러 파일을 한꺼번에 문자열 치환할 때는 bash heredoc 안 `python -` 대신 **scratchpad에 .py 파일을 Write로 만들어 실행**한다. heredoc 안 파이썬 문자열에서는 Dart의 `r'[/\]'`, `\n` 같은 역슬래시가 깨져 치환이 실패한다(2026-11-21 두 번 실패). 2026-11-26에도 `'\\n'`처럼 두 번 써도 실제 줄바꿈이 되어 두 번 또 실패했다 — **Dart 코드에 `\n`이 들어가면 heredoc을 쓰지 말고 처음부터 Edit 도구**로 넣는다. 파일은 `open(..., newline='')`로 써서 줄끝을 바꾸지 않는다.
 - 한글 바로 앞 문자열 보간은 `${sep}월` 대신 `$sep월`로 쓴다(Dart 식별자는 ASCII라 lint `unnecessary_brace_in_string_interps`가 난다).

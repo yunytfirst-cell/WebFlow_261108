@@ -682,6 +682,7 @@ class _MainAreaState extends State<MainArea> with WindowListener {
         onFilePathChanged: (v) => _sidebarFilePath = v,
         loadDirectory: _goalLoadDirectory,
         onLoadDirectoryChanged: (v) => _goalLoadDirectory = v,
+        selectedGoal: _selectedSubGoal,
         onSelectGoal: (g) {
           setState(() => _selectedSubGoal = (_selectedSubGoal == g) ? "" : g);
         },

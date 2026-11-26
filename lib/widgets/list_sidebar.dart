@@ -111,6 +111,7 @@ class ListSidebar<T extends ListSidebarItem> extends StatefulWidget {
     required this.initialFilePath,
     required this.onFilePathChanged,
     this.onSelectItem,
+    this.selectedItem = '',
     this.onDeleteItem,
   });
 
@@ -136,6 +137,20 @@ class ListSidebar<T extends ListSidebarItem> extends StatefulWidget {
 
   /// 🎯 메인 화면으로 보내기 (끝장 리스트만). null이면 🎯 버튼이 없다.
   final Function(String)? onSelectItem;
+
+  /// 지금 메인 화면에 보내져 있는 항목 요약 ([sendSummary] 값, 없으면 ''). 그 항목의 🎯만 밝게 보인다.
+  final String selectedItem;
+
+  /// 🎯 켜짐(메인 화면에 보낸 항목) / 꺼짐 색 (2026-11-26 사용자 지시 "눌러 있는지 알 수 없다, 안 된 것은 더 어둡게")
+  static const Color sendOnColor = Colors.greenAccent;
+  static final Color sendOffColor = Colors.greenAccent.withValues(alpha: 0.3);
+  static final Color sendOnBackground = Colors.greenAccent.withValues(alpha: 0.25);
+
+  /// 🎯로 메인 화면에 보내는 글: 첫 줄, 12자 넘으면 `12자...`
+  static String sendSummary(String text) {
+    final firstLine = text.trim().split('\n').first;
+    return firstLine.length > 12 ? "${firstLine.substring(0, 12)}..." : firstLine;
+  }
 
   /// 항목 삭제 알림 (끝장 리스트만)
   final Function(String)? onDeleteItem;
@@ -1002,13 +1017,7 @@ class _ListSidebarState<T extends ListSidebarItem>
                   '아래로 이동',
                 ),
                 // 🎯 메인 화면으로 보내기는 끝장 리스트에만 있다
-                if (widget.onSelectItem != null)
-                  _iconBtn(
-                    Icons.gps_fixed,
-                    Colors.greenAccent,
-                    () => _sendToMain(item),
-                    '메인 화면으로 보내기',
-                  ),
+                if (widget.onSelectItem != null) _buildSendButton(item),
               ],
             ),
           ),
@@ -1094,12 +1103,27 @@ class _ListSidebarState<T extends ListSidebarItem>
 
   void _sendToMain(T item) {
     if (item.text.trim().isNotEmpty) {
-      String firstLine = item.text.trim().split('\n').first;
-      String finalSummary = firstLine.length > 12
-          ? "${firstLine.substring(0, 12)}..."
-          : firstLine;
-      widget.onSelectItem?.call(finalSummary);
+      widget.onSelectItem?.call(ListSidebar.sendSummary(item.text));
     }
+  }
+
+  /// 🎯 버튼: 메인 화면에 보낸 항목이면 밝은 초록 + 둥근 배경, 아니면 어둡게
+  Widget _buildSendButton(T item) {
+    final sent = widget.selectedItem.isNotEmpty &&
+        item.text.trim().isNotEmpty &&
+        ListSidebar.sendSummary(item.text) == widget.selectedItem;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: sent ? ListSidebar.sendOnBackground : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: _iconBtn(
+        Icons.gps_fixed,
+        sent ? ListSidebar.sendOnColor : ListSidebar.sendOffColor,
+        () => _sendToMain(item),
+        '메인 화면으로 보내기',
+      ),
+    );
   }
 
   void _addItem(int index) {
