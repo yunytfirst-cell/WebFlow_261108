@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'goal_list_sidebar.dart';
+import 'list_sidebar.dart';
 import 'clay_button.dart';
 import '../models/design_theme.dart';
 import 'top_bar_ticker.dart';
@@ -14,7 +14,7 @@ class TopBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onSettingsPressed;
   final VoidCallback? onToggleTheme;
   final String selectedSubGoal;
-  final List<GoalItem> sidebarGoals;
+  final List<ListSidebarItem> sidebarGoals; // 메인에 보낸 항목이 속한 리스트(끝장 또는 알아차림)
   final ScrollController scrollController;
   final double maxWidth;
   final double maxHeight;

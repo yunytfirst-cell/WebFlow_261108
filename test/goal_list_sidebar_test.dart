@@ -48,6 +48,8 @@ void main() {
                       onFilePathChanged: (_) {},
                     )
                   : AwarenessListSidebar(
+                      onSelectItem: (_) {},
+                      onDeleteItem: (_) {},
                       runRecords: records,
                       onRunRecordsChanged: () {},
                       onLoadDirectoryChanged: (_) {},
@@ -97,6 +99,8 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: AwarenessListSidebar(
+            onSelectItem: (_) {},
+            onDeleteItem: (_) {},
             runRecords: runRecords,
             onRunRecordsChanged: () {},
             onLoadDirectoryChanged: (_) {},
@@ -191,6 +195,8 @@ void main() {
   Widget awarenessSidebar(List<AwarenessItem> items) => MaterialApp(
     home: Scaffold(
       body: AwarenessListSidebar(
+        onSelectItem: (_) {},
+        onDeleteItem: (_) {},
         runRecords: {},
         onRunRecordsChanged: () {},
         onLoadDirectoryChanged: (_) {},
@@ -311,7 +317,8 @@ void main() {
     final items = [AwarenessItem(text: 'B'), AwarenessItem(text: 'C')];
     await tester.pumpWidget(awarenessSidebar(items));
     expect(find.byIcon(Icons.more_vert), findsNothing);
-    expect(find.byTooltip('메인 화면으로 보내기'), findsNothing);
+    // 2026-11-26 사용자 지시: 알아차림 리스트에도 🎯가 있다
+    expect(find.byTooltip('메인 화면으로 보내기'), findsNWidgets(2));
     await tester.tap(find.byTooltip('위로 이동').last);
     await tester.pump();
     expect(items.first.text, 'C');
@@ -543,6 +550,51 @@ void main() {
     await tester.pump();
     expect(colors(), [ListSidebar.sendOffColor, ListSidebar.sendOffColor]);
     expect(ListSidebar.sendSummary('가나다라마바사아자차카타파\n둘째'), '가나다라마바사아자차카타...');
+    expect(tester.takeException(), isNull);
+  });
+
+  // 2026-11-26 사용자 지시: 알아차림 리스트에도 끝장 리스트와 같은 🎯(켜짐/꺼짐 색 포함)
+  testWidgets('알아차림 리스트: 🎯로 보내고, 보낸 항목만 밝다', (tester) async {
+    setWide(tester);
+    final items = [AwarenessItem(text: 'A'), AwarenessItem(text: 'B')];
+    var selected = '';
+    await tester.pumpWidget(
+      StatefulBuilder(
+        builder: (context, setState) => MaterialApp(
+          home: Scaffold(
+            body: AwarenessListSidebar(
+              onSelectItem: (g) =>
+                  setState(() => selected = selected == g ? '' : g),
+              onDeleteItem: (_) {},
+              selectedItem: selected,
+              runRecords: {},
+              onRunRecordsChanged: () {},
+              onLoadDirectoryChanged: (_) {},
+              onClose: () {},
+              initialTitle: '',
+              initialItems: items,
+              initialFilePath: null,
+              onTitleChanged: (_) {},
+              onItemsChanged: (_) {},
+              onFilePathChanged: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    List<Color?> colors() => tester
+        .widgetList<Icon>(find.byIcon(Icons.gps_fixed))
+        .map((i) => i.color)
+        .toList();
+
+    expect(colors(), [ListSidebar.sendOffColor, ListSidebar.sendOffColor]);
+    await tester.tap(find.byTooltip('메인 화면으로 보내기').first);
+    await tester.pump();
+    expect(selected, 'A');
+    expect(colors(), [ListSidebar.sendOnColor, ListSidebar.sendOffColor]);
+    await tester.tap(find.byTooltip('메인 화면으로 보내기').first);
+    await tester.pump();
+    expect(selected, '');
     expect(tester.takeException(), isNull);
   });
 }

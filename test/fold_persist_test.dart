@@ -183,6 +183,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: AwarenessListSidebar(
+          onSelectItem: (_) {},
+          onDeleteItem: (_) {},
           loadDirectory: dir.path,
           runRecords: {},
           onRunRecordsChanged: () {},

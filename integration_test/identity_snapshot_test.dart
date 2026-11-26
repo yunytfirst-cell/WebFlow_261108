@@ -97,6 +97,8 @@ void main() {
             left: 0,
             bottom: 0,
             child: AwarenessListSidebar(
+              onSelectItem: (_) {},
+              onDeleteItem: (_) {},
               runRecords: {'2026-11-25': 1},
               onRunRecordsChanged: () {},
               onLoadDirectoryChanged: (_) {},

@@ -118,6 +118,8 @@ class _MainAreaState extends State<MainArea> with WindowListener {
   // 두 사이드바가 겹칠 때 마지막으로 조작한 패널을 위에 그린다.
   bool _awarenessSidebarOnTop = false;
   String _selectedSubGoal = "";
+  // 2026-11-26: 메인 목표 칸에 보낸 항목이 알아차림 리스트에서 왔는지 (아니면 끝장 리스트)
+  bool _mainFromAwareness = false;
   bool _showOverlay = false;
   String _overlayText = "";
   String _sidebarTitle = "";
@@ -598,7 +600,7 @@ class _MainAreaState extends State<MainArea> with WindowListener {
                       onSettingsPressed: _showTimeEditDialog,
                       onToggleTheme: _toggleTheme,
                       selectedSubGoal: _selectedSubGoal,
-                      sidebarGoals: _sidebarGoals,
+                      sidebarGoals: _mainFromAwareness ? _awarenessItems : _sidebarGoals,
                       scrollController: _subGoalScrollController,
                       maxWidth: screenSize.width,
                       maxHeight: screenSize.height,
@@ -682,13 +684,9 @@ class _MainAreaState extends State<MainArea> with WindowListener {
         onFilePathChanged: (v) => _sidebarFilePath = v,
         loadDirectory: _goalLoadDirectory,
         onLoadDirectoryChanged: (v) => _goalLoadDirectory = v,
-        selectedGoal: _selectedSubGoal,
-        onSelectGoal: (g) {
-          setState(() => _selectedSubGoal = (_selectedSubGoal == g) ? "" : g);
-        },
-        onDeleteGoal: (goal) {
-          if (_selectedSubGoal == goal) setState(() => _selectedSubGoal = "");
-        },
+        selectedGoal: _mainFromAwareness ? '' : _selectedSubGoal,
+        onSelectGoal: (g) => _selectForMain(g, fromAwareness: false),
+        onDeleteGoal: (g) => _deleteFromMain(g, fromAwareness: false),
         onClose: () => setState(() => _showSidebar = false),
       ),
     );
@@ -716,9 +714,38 @@ class _MainAreaState extends State<MainArea> with WindowListener {
         onFilePathChanged: (v) => _awarenessFilePath = v,
         loadDirectory: _awarenessLoadDirectory,
         onLoadDirectoryChanged: (v) => _awarenessLoadDirectory = v,
+        selectedItem: _mainFromAwareness ? _selectedSubGoal : '',
+        onSelectItem: (g) => _selectForMain(g, fromAwareness: true),
+        onDeleteItem: (g) => _deleteFromMain(g, fromAwareness: true),
         onClose: () => setState(() => _showAwarenessSidebar = false),
       ),
     );
+  }
+
+  /// 🎯로 항목을 메인 목표 칸에 보낸다. 같은 리스트의 같은 항목을 다시 누르면 끈다.
+  /// 빈 값('')은 그 리스트가 새로만들기·불러오기를 한 것이라, 그 리스트에서 보낸 항목일 때만 지운다.
+  void _selectForMain(String g, {required bool fromAwareness}) {
+    final sameSource = _mainFromAwareness == fromAwareness;
+    if (g.isEmpty) {
+      if (sameSource && _selectedSubGoal.isNotEmpty) {
+        setState(() => _selectedSubGoal = "");
+      }
+      return;
+    }
+    setState(() {
+      if (sameSource && _selectedSubGoal == g) {
+        _selectedSubGoal = "";
+      } else {
+        _selectedSubGoal = g;
+        _mainFromAwareness = fromAwareness;
+      }
+    });
+  }
+
+  void _deleteFromMain(String g, {required bool fromAwareness}) {
+    if (_mainFromAwareness == fromAwareness && _selectedSubGoal == g) {
+      setState(() => _selectedSubGoal = "");
+    }
   }
 
   Widget _buildModeContent(BoxConstraints constraints) {
