@@ -84,7 +84,7 @@ host=github.com
 - 빌드 기록: v1.6.4+34 → `dist\Flow.exe` 16.5MB, 파일 버전 1.6.4+34, 단일 exe 창 제목 `Flow v1.6.4` 확인 (2026-11-25).
 - 빌드 기록: v1.7.3+39 → `--skip-build`(run_app 빌드가 마지막 코드 커밋보다 나중), `dist\Flow.exe` 16.5MB, 파일 버전 1.7.3+39, 창 제목 `Flow v1.7.3` 확인 (2026-11-26).
 - 빌드 기록: v1.7.5+41 → `--skip-build`, `dist\Flow.exe` 16.5MB(17,268,224 bytes) → 바탕화면 `C:\Users\yunyt\OneDrive\Desktop\Flow-v1.7.5.exe`로 복사, 파일 버전 1.7.5+41, 바탕화면 exe 창 제목 `Flow v1.7.5` 확인 (2026-11-26, 요청 "릴리즈 파일 만들고 복사해서 바탕화면으로" = 위 "바탕화면으로 복사" 절차. 원본 dist\Flow.exe는 그대로 둔다).
-- 빌드 기록: v1.7.8+44 → `--skip-build`(Release 18:55:31 > 코드 커밋 18:55:02), `dist\Flow.exe` 16.5MB(17,272,320 bytes), 파일 버전 1.7.8+44, 빈 폴더(`%TEMP%lowcheck`)로 복사해 창 제목 `Flow v1.7.8` 확인 (2026-11-28, 요청 "릴리스 파일을 만들어라" = dist\Flow.exe 만들기. 바탕화면 복사는 말하지 않아 하지 않음. 코드·skill을 바꾸지 않는 요청이라 이해 확인 질문 없이 바로 실행 — flow-skill-record).
+- 빌드 기록: v1.7.8+44 → `--skip-build`(Release 18:55:31 > 코드 커밋 18:55:02), `dist\Flow.exe` 16.5MB(17,272,320 bytes), 파일 버전 1.7.8+44, 빈 폴더(`%TEMP%\flowcheck`)로 복사해 창 제목 `Flow v1.7.8` 확인 (2026-11-28, 요청 "릴리스 파일을 만들어라" = dist\Flow.exe 만들기. 바탕화면 복사는 말하지 않아 하지 않음. 코드·skill을 바꾸지 않는 요청이라 이해 확인 질문 없이 바로 실행 — flow-skill-record).
 - 빠른 방법(2026-11-25): `build/windows/x64/runner/Release/flow.exe` 시각이 마지막 앱 코드 커밋(`git log -1 --format=%cd -- lib pubspec.yaml windows assets`)보다 나중이면 `--skip-build`로 묶기만 한다(작업 끝마다 run_app.py가 이미 릴리스 빌드함). 아니면 그냥 `python tools/build_exe.py`.
 - 사용자는 "실행파일들것"처럼 줄여·오타로 요청하기도 한다 → "실행파일 만들 것"으로 보고 묻지 않고 이 절차를 실행한다.
 - 버전 확인은 `$v=(Get-Item dist\Flow.exe).VersionInfo; "$($v.FileVersion)"`처럼 문자열로 찍는다(`Select` 표 출력은 줄이 잘려 `1`만 보일 때가 있었음).
