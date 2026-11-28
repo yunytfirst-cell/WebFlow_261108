@@ -61,6 +61,7 @@ description: Flow 프로젝트에서 skill(.claude/skills) 기록 규칙과 자�
 - bash heredoc 안 python 문자열에 백슬래시가 들어가면 깨진다: Windows 경로 `build\windows\x64\runner\Release\flow.exe`의 `\x`·`\r`·`\f`가 제어문자로 바뀌어 `build\windowsdunner\Releaselow.exe`처럼 되거나, `\x`가 문법 오류를 낸다. Dart의 `'\n'`도 실제 줄바꿈이 된다.
 - 그래서: 짧은 추가·수정은 **Edit 도구**, 긴 코드 수정은 **Write 도구로 .py 파일을 만들어** 실행한다. skill에 경로를 쓸 때는 슬래시(`build/windows/...`)로 쓴다.
 - 쓴 뒤 제어문자 검사: `python -c "s=open('파일',encoding='utf-8').read(); print([hex(ord(c)) for c in s if ord(c)<32 and c not in chr(10)+chr(9)])"` → `[]`이어야 한다.
+- 재발 2026-11-28: 빌드 기록에 `%TEMP%\flowcheck`를 heredoc python 일반 문자열로 넣어 `\f`가 깨짐(위 규칙을 어김). **skill에 한 줄 추가는 무조건 Edit 도구**로 한다(경로가 없어 보여도).
 
 ## 답변에 보고
 
