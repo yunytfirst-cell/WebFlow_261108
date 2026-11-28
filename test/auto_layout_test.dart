@@ -141,8 +141,9 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: where);
-        // 2026-11-28: 목록(스크롤바가 오른쪽 끝에 붙음)은 폭 조절 드래그 영역과 겹치지 않는다
-        final lists = find.byType(ListView).evaluate().toList();
+        // 2026-11-28: 스크롤바는 폭 조절 드래그 영역의 반대편 가장자리에 붙는다
+        // (끝장=오른쪽, 알아차림=왼쪽). 스크롤바 쪽은 Scrollbar 위의 글 방향으로 정해진다.
+        final bars = find.byType(Scrollbar).evaluate().toList();
         final edges = find
             .byWidgetPredicate(
               (w) =>
@@ -151,17 +152,26 @@ void main() {
             )
             .evaluate()
             .toList();
-        expect(lists.length, 2, reason: where);
+        expect(bars.length, 2, reason: where);
         expect(edges.length, 2, reason: where);
-        for (final l in lists) {
-          final lr = tester.getRect(find.byWidget(l.widget));
-          final scrollbarLeft = lr.right - 10; // 데스크톱 스크롤바 폭 정도
+        final barSides = <String>{};
+        for (final b in bars) {
+          final r = tester.getRect(find.byWidget(b.widget));
+          final onLeft = Directionality.of(b) == TextDirection.rtl;
+          barSides.add(onLeft ? 'left' : 'right');
+          final barRect = onLeft
+              ? Rect.fromLTRB(r.left, r.top, r.left + 10, r.bottom)
+              : Rect.fromLTRB(r.right - 10, r.top, r.right, r.bottom);
           for (final e in edges) {
             final er = tester.getRect(find.byWidget(e.widget));
-            final overlaps = scrollbarLeft < er.right && lr.right > er.left;
-            expect(overlaps, isFalse, reason: '$where 목록 $lr 드래그 $er');
+            expect(
+              barRect.left < er.right && barRect.right > er.left,
+              isFalse,
+              reason: '$where 스크롤바 $barRect 드래그 $er',
+            );
           }
         }
+        expect(barSides, {'left', 'right'}, reason: where);
         // 저장 버튼·서식 툴박스 버튼이 창 안에 보인다
         for (final f in [find.text('저장'), find.byTooltip('글자 편집 목록 열기')]) {
           for (final r in f.evaluate().map(

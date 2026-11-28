@@ -176,6 +176,9 @@ class _ListSidebarState<T extends ListSidebarItem>
   // 순번 직접 변경: 번호를 눌러 새 순번을 입력하고 엔터/포커스 이동/저장 시 그 위치로 옮긴다
   int? _numberEditIndex;
   static final Listenable _noTarget = ValueNotifier<int>(0);
+
+  /// 항목 목록 스크롤 (스크롤바를 직접 붙이려고 갖는다).
+  final ScrollController _listScroll = ScrollController();
   // 서식 툴박스가 바꿀 항목 (마지막으로 누른 항목). 순번이 바뀌어도 따라가도록 객체로 기억한다.
   T? _styleTarget;
 
@@ -520,6 +523,7 @@ class _ListSidebarState<T extends ListSidebarItem>
     _numberFocus.removeListener(_onNumberFocusChanged);
     _numberFocus.dispose();
     _numberController.dispose();
+    _listScroll.dispose();
     super.dispose();
   }
 
@@ -796,19 +800,35 @@ class _ListSidebarState<T extends ListSidebarItem>
                         indent: 20,
                         endIndent: 20,
                       ),
-                      // 2026-11-28 사용자 지시: 스크롤바가 폭 조절 드래그 영역과
-                      // 겹치지 않게, 스크롤바가 오른쪽(드래그 쪽)에 오는 왼쪽 패널은
-                      // 목록을 드래그 영역 폭만큼 안쪽으로 들인다.
+                      // 2026-11-28 사용자 지시 "스크롤바도 같은 왼쪽 끝으로 이동":
+                      // 스크롤바는 폭 조절 드래그 영역의 반대편(화면 바깥쪽 가장자리)에
+                      // 둔다. 끝장=오른쪽, 알아차림=왼쪽. 세로 스크롤바는 글 방향이
+                      // rtl이면 왼쪽에 붙으므로 Scrollbar만 rtl로 감싸고 목록은 ltr로 되돌린다.
                       Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            right: dockRight ? 0 : ListSidebar.edgeDragWidth,
-                          ),
-                          child: ListView.builder(
-                            itemCount: _items.length,
-                            itemBuilder: (context, index) {
-                              return _buildBubbleItem(index, _items[index].id);
-                            },
+                        child: ScrollConfiguration(
+                          behavior: ScrollConfiguration.of(
+                            context,
+                          ).copyWith(scrollbars: false),
+                          child: Directionality(
+                            textDirection: dockRight
+                                ? TextDirection.ltr
+                                : TextDirection.rtl,
+                            child: Scrollbar(
+                              controller: _listScroll,
+                              child: Directionality(
+                                textDirection: TextDirection.ltr,
+                                child: ListView.builder(
+                                  controller: _listScroll,
+                                  itemCount: _items.length,
+                                  itemBuilder: (context, index) {
+                                    return _buildBubbleItem(
+                                      index,
+                                      _items[index].id,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
