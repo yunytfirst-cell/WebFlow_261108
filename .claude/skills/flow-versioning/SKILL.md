@@ -33,6 +33,7 @@ description: Flow 앱 버전 번호(pubspec version, lib/app_version.dart), CHAN
    ```
 
 `test/app_version_test.dart`가 (1)=(2), CHANGELOG 맨 위=현재 버전인지 검사한다. 하나만 고치면 `flutter test`가 실패한다.
+- **버전을 올린 뒤 반드시 `flutter test` 전체를 다시 돌리고 커밋한다** (2026-11-28 실수: v1.7.6에서 `appVersion`만 바꾸고 `appBuild`를 그대로 둔 채, 올리기 전에 돌린 테스트 결과만 보고 태그까지 push → 다음 요청에서 발견, 태그를 옮기지 않고 1.7.7로 바로잡음). `appVersion`과 `appBuild` 두 줄을 같이 고친다.
 
 ## 절차 (앱 코드 변경 작업 끝에)
 
