@@ -143,6 +143,9 @@ class ListSidebar<T extends ListSidebarItem> extends StatefulWidget {
 
   /// 🎯 켜짐(메인 화면에 보낸 항목) / 꺼짐 색 (2026-11-26 사용자 지시 "눌러 있는지 알 수 없다, 안 된 것은 더 어둡게")
   static const Color sendOnColor = Colors.greenAccent;
+
+  /// 안쪽 가장자리 폭 조절 드래그 영역 폭.
+  static const double edgeDragWidth = 15;
   static final Color sendOffColor = Colors.greenAccent.withValues(alpha: 0.3);
   static final Color sendOnBackground = Colors.greenAccent.withValues(
     alpha: 0.25,
@@ -793,12 +796,20 @@ class _ListSidebarState<T extends ListSidebarItem>
                         indent: 20,
                         endIndent: 20,
                       ),
+                      // 2026-11-28 사용자 지시: 스크롤바가 폭 조절 드래그 영역과
+                      // 겹치지 않게, 스크롤바가 오른쪽(드래그 쪽)에 오는 왼쪽 패널은
+                      // 목록을 드래그 영역 폭만큼 안쪽으로 들인다.
                       Expanded(
-                        child: ListView.builder(
-                          itemCount: _items.length,
-                          itemBuilder: (context, index) {
-                            return _buildBubbleItem(index, _items[index].id);
-                          },
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            right: dockRight ? 0 : ListSidebar.edgeDragWidth,
+                          ),
+                          child: ListView.builder(
+                            itemCount: _items.length,
+                            itemBuilder: (context, index) {
+                              return _buildBubbleItem(index, _items[index].id);
+                            },
+                          ),
                         ),
                       ),
                     ],
@@ -812,7 +823,7 @@ class _ListSidebarState<T extends ListSidebarItem>
                 right: dockRight ? null : 0,
                 top: 0,
                 bottom: 0,
-                width: 15,
+                width: ListSidebar.edgeDragWidth,
                 child: MouseRegion(
                   cursor: SystemMouseCursors.resizeLeftRight,
                   child: GestureDetector(

@@ -125,7 +125,8 @@ final Function(String?) onLoadDirectoryChanged;
 ## 5. 사이드바 화면 규격 (두 위젯 공통)
 
 - **오토 레이아웃 크기** (2026-11-24 사용자 지시 "슬라이드 안의 텍스트 및 아이콘 오토레이아웃, 글자 작아짐, 불러온 리스트 박스 글자도 작아짐", 두 리스트 동일): 상태 필드 `double _uiScale`와 `_sz(base) => base * _uiScale`. build에서 `currentWidth`를 구한 직후 `_uiScale = (currentWidth / 480).clamp(0.7, 1.0)`. `_sz`를 쓰는 곳: 제목 입력칸 글자·힌트, 동작 버튼(아이콘 14·글자 12·패딩 12/8), 순번 원(radius 12·글자 12)·순번 입력칸(폭 40·글자 12), **항목 글자 14**(`_buildItemText`의 textStyle — 한 줄 넘는지 계산도 같은 크기라 접기 판단이 맞음), 접기 박스(24×20·아이콘 18), 도구 줄 `_iconBtn` 아이콘 18. 제목 줄은 FittedBox가 맞춘다. 기본 폭(화면 1280의 48% = 614)에서는 예전 크기 그대로.
-- 기본 폭 화면의 48% (`_widthRatio = 0.48`), 최소 160(화면이 좁으면 기본 폭), 최대 화면 전체. 가장자리 15px 드래그 영역(`SystemMouseCursors.resizeLeftRight`)으로 폭 조절.
+- 기본 폭 화면의 48% (`_widthRatio = 0.48`), 최소 160(화면이 좁으면 기본 폭), 최대 화면 전체. 가장자리 15px 드래그 영역(`ListSidebar.edgeDragWidth`, `SystemMouseCursors.resizeLeftRight`)으로 폭 조절.
+  - **스크롤바와 드래그 영역을 겹치지 않는다** (2026-11-28 사용자 지시 "알아차림 리스트 스크롤과 좌우 크기조정이 겹친다"): 데스크톱 스크롤바는 목록 오른쪽 끝에 붙는다. 알아차림(dockRight false)은 드래그 영역도 오른쪽이라 겹치므로, 항목 `ListView`를 `Padding(right: dockRight ? 0 : edgeDragWidth)`로 감싸 스크롤바를 드래그 영역 왼쪽으로 옮긴다. 끝장(드래그 왼쪽)은 겹치지 않아 그대로. 드래그 폭을 바꾸면 이 여백도 같은 상수라 함께 바뀐다.
 - 바탕 `Colors.black.withAlpha(spec.panelAlpha)` (끝장 220, 알아차림 200 — 예전 코드 값 그대로), 안쪽 경계선 `Colors.white12` 1.5.
 - 위에서부터: 제목 줄 → 제목 입력칸(orangeAccent, 굵게) → 버튼 `Wrap`(간격 8, 가운데) → `SizedBox(6)` → `Divider(white24, indent 20)` → 항목 `ListView`.
 - **제목 줄** (2026-11-24 사용자 지시 "실행누적 박스를 슬라이드 제목 앞으로, 오토레이아웃"): 끝장 `[Expanded(Center(FittedBox(scaleDown, Row[RunCounterPanel, SizedBox(10), 제목]))), 닫기(X)]`, 알아차림 `[닫기(X), Expanded(같은 묶음)]`. 실행 박스와 제목을 **한 FittedBox로 묶어** 좁으면 함께 줄어든다. 예전 반대편 균형용 `SizedBox(40)`은 없앴다. 제목 글자 크기 `(짧은 변 * 0.03).clamp(11, 18)`.
